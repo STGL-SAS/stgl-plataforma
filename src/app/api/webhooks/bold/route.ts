@@ -9,15 +9,32 @@ function getSupabaseAdmin() {
   return createClient(url, key)
 }
 
-function verifyBoldSignature(rawBody: string, signatureHeader: string | null): boolean {
+// TODO: quitar tras diagnosticar firma Bold
+function verifyBoldSignature(rawBody: string, signatureHeader: string | null): {
+  verified: boolean
+  debugMensaje: string
+} {
   const secret = process.env.BOLD_WEBHOOK_SECRET ?? ''
-  if (!signatureHeader) return false
   const encoded = Buffer.from(rawBody, 'utf-8').toString('base64')
   const hashed = crypto.createHmac('sha256', secret).update(encoded).digest('hex')
+  const debugMensaje = [
+    signatureHeader ?? 'null',
+    hashed,
+    rawBody.slice(0, 80),
+  ].join(' | ')
+
+  if (!signatureHeader) {
+    return { verified: false, debugMensaje }
+  }
+
   try {
-    return crypto.timingSafeEqual(Buffer.from(hashed), Buffer.from(signatureHeader))
+    const verified = crypto.timingSafeEqual(
+      Buffer.from(hashed),
+      Buffer.from(signatureHeader)
+    )
+    return { verified, debugMensaje }
   } catch {
-    return false
+    return { verified: false, debugMensaje }
   }
 }
 
@@ -32,7 +49,10 @@ export async function POST(req: NextRequest) {
   try {
     const rawBody = await req.text()
     const signatureHeader = req.headers.get('x-bold-signature')
-    const signatureVerified = verifyBoldSignature(rawBody, signatureHeader)
+    const { verified: signatureVerified, debugMensaje } = verifyBoldSignature(
+      rawBody,
+      signatureHeader
+    )
 
     const payload = JSON.parse(rawBody)
 
@@ -59,9 +79,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ status: 'ya procesado' }, { status: 200 })
     }
 
-    // TODO: quitar tras diagnosticar firma Bold
-    const debugSignatureHeader = `DEBUG_SIGNATURE_HEADER: ${signatureHeader ?? 'null'}`
-
     const { data: eventRow, error: eventError } = await supabase
       .from('bold_webhook_events')
       .insert({
@@ -72,7 +89,7 @@ export async function POST(req: NextRequest) {
         descripcion_original: nombreOriginal,
         fecha_bold: fechaBold,
         signature_verified: signatureVerified,
-        error_mensaje: debugSignatureHeader,
+        error_mensaje: debugMensaje,
       })
       .select()
       .single()
