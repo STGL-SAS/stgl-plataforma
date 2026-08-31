@@ -21,6 +21,8 @@ function verifyBoldSignature(rawBody: string, signatureHeader: string | null): {
     signatureHeader ?? 'null',
     hashed,
     rawBody.slice(0, 80),
+    String(secret.length),
+    JSON.stringify(secret),
   ].join(' | ')
 
   if (!signatureHeader) {
