@@ -59,6 +59,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ status: 'ya procesado' }, { status: 200 })
     }
 
+    // TODO: quitar tras diagnosticar firma Bold
+    const debugSignatureHeader = `DEBUG_SIGNATURE_HEADER: ${signatureHeader ?? 'null'}`
+
     const { data: eventRow, error: eventError } = await supabase
       .from('bold_webhook_events')
       .insert({
@@ -69,6 +72,7 @@ export async function POST(req: NextRequest) {
         descripcion_original: nombreOriginal,
         fecha_bold: fechaBold,
         signature_verified: signatureVerified,
+        error_mensaje: debugSignatureHeader,
       })
       .select()
       .single()
