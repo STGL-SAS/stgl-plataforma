@@ -9,34 +9,15 @@ function getSupabaseAdmin() {
   return createClient(url, key)
 }
 
-// TODO: quitar tras diagnosticar firma Bold
-function verifyBoldSignature(rawBody: string, signatureHeader: string | null): {
-  verified: boolean
-  debugMensaje: string
-} {
+function verifyBoldSignature(rawBody: string, signatureHeader: string | null): boolean {
   const secret = process.env.BOLD_WEBHOOK_SECRET ?? ''
+  if (!signatureHeader) return false
   const encoded = Buffer.from(rawBody, 'utf-8').toString('base64')
   const hashed = crypto.createHmac('sha256', secret).update(encoded).digest('hex')
-  const debugMensaje = [
-    signatureHeader ?? 'null',
-    hashed,
-    rawBody.slice(0, 80),
-    String(secret.length),
-    JSON.stringify(secret),
-  ].join(' | ')
-
-  if (!signatureHeader) {
-    return { verified: false, debugMensaje }
-  }
-
   try {
-    const verified = crypto.timingSafeEqual(
-      Buffer.from(hashed),
-      Buffer.from(signatureHeader)
-    )
-    return { verified, debugMensaje }
+    return crypto.timingSafeEqual(Buffer.from(hashed), Buffer.from(signatureHeader))
   } catch {
-    return { verified: false, debugMensaje }
+    return false
   }
 }
 
@@ -51,10 +32,7 @@ export async function POST(req: NextRequest) {
   try {
     const rawBody = await req.text()
     const signatureHeader = req.headers.get('x-bold-signature')
-    const { verified: signatureVerified, debugMensaje } = verifyBoldSignature(
-      rawBody,
-      signatureHeader
-    )
+    const signatureVerified = verifyBoldSignature(rawBody, signatureHeader)
 
     const payload = JSON.parse(rawBody)
 
@@ -91,7 +69,6 @@ export async function POST(req: NextRequest) {
         descripcion_original: nombreOriginal,
         fecha_bold: fechaBold,
         signature_verified: signatureVerified,
-        error_mensaje: debugMensaje,
       })
       .select()
       .single()
