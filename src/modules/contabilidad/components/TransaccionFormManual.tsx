@@ -8,13 +8,13 @@ import {
   type VentaHydrexPayload,
 } from '@/modules/inventario-hydrex/components/VentaHydrexFormExtension'
 import { createTransaccionConVentaHydrex } from '@/modules/inventario-hydrex/actions/mutations'
-import type { ComponenteCosto, HydrexProducto, HydrexProductoInsumo, PrecioRow } from '@/modules/inventario-hydrex/lib/tipos'
+import type { ComponenteCosto, HydrexProducto, HydrexProductoRecetaLinea, PrecioRow } from '@/modules/inventario-hydrex/lib/tipos'
 import type { CuentaBancaria, Negocio, TipoTransaccionManual } from '../types'
 
 interface HydrexCatalog {
   productos: HydrexProducto[]
   preciosMap: Record<string, PrecioRow[]>
-  recetaMap: Record<string, HydrexProductoInsumo[]>
+  recetaMap: Record<string, HydrexProductoRecetaLinea[]>
   stockMap: Record<string, number>
   componentes: ComponenteCosto[]
   envioTarifas: { id: string; nombre: string; valor_referencia: number }[]

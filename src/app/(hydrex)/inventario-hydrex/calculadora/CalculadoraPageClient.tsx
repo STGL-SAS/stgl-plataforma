@@ -1,7 +1,7 @@
 'use client'
 
 import { CalculadoraVenta } from '@/modules/inventario-hydrex/components/CalculadoraVenta'
-import type { ComponenteCosto, HydrexProducto, HydrexProductoInsumo, PrecioRow } from '@/modules/inventario-hydrex/lib/tipos'
+import type { ComponenteCosto, HydrexProducto, HydrexProductoRecetaLinea, PrecioRow } from '@/modules/inventario-hydrex/lib/tipos'
 
 export function CalculadoraPageClient({
   productos,
@@ -13,7 +13,7 @@ export function CalculadoraPageClient({
 }: {
   productos: HydrexProducto[]
   preciosMap: Record<string, PrecioRow[]>
-  recetaMap: Record<string, HydrexProductoInsumo[]>
+  recetaMap: Record<string, HydrexProductoRecetaLinea[]>
   stockMap: Record<string, number>
   componentes: ComponenteCosto[]
   envioTarifas: { id: string; nombre: string; valor_referencia: number }[]

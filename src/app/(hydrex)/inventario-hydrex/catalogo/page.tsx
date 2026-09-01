@@ -3,7 +3,7 @@ import {
   getPreciosProducto,
   getProductosConCosto,
   getProductosFull,
-  getRecetaPorProducto,
+  getProductoReceta,
   getStockProductos,
   getTiposInsumo,
 } from '@/modules/inventario-hydrex/lib/queries'
@@ -18,7 +18,7 @@ export default async function CatalogoPage() {
     getInsumos(),
     getProductosFull(),
     getProductosConCosto(),
-    getRecetaPorProducto(),
+    getProductoReceta(),
     getStockProductos(),
   ])
   const stockMap = stockProductosToMap(stockProductos)

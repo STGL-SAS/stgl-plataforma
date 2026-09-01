@@ -1,4 +1,4 @@
-import type { HydrexInsumo, HydrexProductoInsumo } from './tipos'
+import type { HydrexInsumo, HydrexProducto, HydrexProductoRecetaLinea } from './tipos'
 
 export function formatInsumoLabel(
   insumo: Pick<HydrexInsumo, 'nombre' | 'atributo_1' | 'atributo_2'>
@@ -7,21 +7,41 @@ export function formatInsumoLabel(
   return detalle ? `${insumo.nombre} (${detalle})` : insumo.nombre
 }
 
-export function formatRecetaLinea(
-  linea: Pick<HydrexProductoInsumo, 'cantidad' | 'insumo_id' | 'insumo'>,
-  insumoById?: Map<string, HydrexInsumo>
+export function formatProductoLabel(
+  producto: Pick<HydrexProducto, 'nombre' | 'tipo_producto'>
 ): string {
-  const insumo = linea.insumo ?? insumoById?.get(linea.insumo_id)
-  const nombre = insumo ? formatInsumoLabel(insumo) : 'Insumo'
+  return `${producto.nombre} (${producto.tipo_producto})`
+}
+
+export function formatRecetaLinea(
+  linea: Pick<
+    HydrexProductoRecetaLinea,
+    'cantidad' | 'insumo_id' | 'componente_producto_id' | 'insumo' | 'componente'
+  >,
+  insumoById?: Map<string, HydrexInsumo>,
+  productoById?: Map<string, HydrexProducto>
+): string {
   const cantidad = Number(linea.cantidad)
   const cantidadStr = Number.isInteger(cantidad) ? String(cantidad) : cantidad.toString()
+
+  if (linea.componente_producto_id || linea.componente) {
+    const producto =
+      linea.componente ??
+      (linea.componente_producto_id ? productoById?.get(linea.componente_producto_id) : undefined)
+    const nombre = producto ? formatProductoLabel(producto) : 'Producto'
+    return `${nombre} × ${cantidadStr}`
+  }
+
+  const insumo = linea.insumo ?? (linea.insumo_id ? insumoById?.get(linea.insumo_id) : undefined)
+  const nombre = insumo ? formatInsumoLabel(insumo) : 'Insumo'
   return `${nombre} × ${cantidadStr}`
 }
 
 export function formatRecetaResumen(
-  lineas: HydrexProductoInsumo[],
-  insumoById?: Map<string, HydrexInsumo>
+  lineas: HydrexProductoRecetaLinea[],
+  insumoById?: Map<string, HydrexInsumo>,
+  productoById?: Map<string, HydrexProducto>
 ): string {
   if (!lineas.length) return 'Sin receta'
-  return lineas.map((l) => formatRecetaLinea(l, insumoById)).join(' · ')
+  return lineas.map((l) => formatRecetaLinea(l, insumoById, productoById)).join(' · ')
 }

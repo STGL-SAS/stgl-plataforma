@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, useState } from 'react'
 import { calcularVenta, productoCostoDisponible } from '../lib/motor-calculo'
-import type { ComponenteCosto, HydrexProducto, HydrexProductoInsumo, PrecioRow } from '../lib/tipos'
+import type { ComponenteCosto, HydrexProducto, HydrexProductoRecetaLinea, PrecioRow } from '../lib/tipos'
 import { CalculadoraVenta, type CalculadoraState } from './CalculadoraVenta'
 
 export interface VentaHydrexPayload {
@@ -22,7 +22,7 @@ export interface VentaHydrexPayload {
 interface Props {
   productos: HydrexProducto[]
   preciosMap: Record<string, PrecioRow[]>
-  recetaMap?: Record<string, HydrexProductoInsumo[]>
+  recetaMap?: Record<string, HydrexProductoRecetaLinea[]>
   stockMap?: Record<string, number>
   componentes: ComponenteCosto[]
   envioTarifas: { id: string; nombre: string; valor_referencia: number }[]

@@ -54,9 +54,7 @@ export function InventarioStock({ stock, stockProductos, tipos, movimientos }: P
         <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
           <div>
             <h2 className="text-lg font-semibold text-zinc-900">Stock actual</h2>
-            <p className="mt-1 text-sm text-zinc-600">
-              Saldo disponible por insumo (vista <code className="text-xs">hydrex_stock_actual</code>)
-            </p>
+            <p className="mt-1 text-sm text-zinc-600">Saldo disponible por insumo</p>
           </div>
           {stock.length > 0 && (
             <p className="text-sm text-zinc-600">
@@ -133,8 +131,7 @@ export function InventarioStock({ stock, stockProductos, tipos, movimientos }: P
             Stock de productos terminados (calculado)
           </h2>
           <p className="mt-1 text-sm text-zinc-600">
-            Unidades que se pueden armar hoy según insumos disponibles (vista{' '}
-            <code className="text-xs">hydrex_stock_productos</code>)
+            Unidades que se pueden armar hoy según insumos disponibles
           </p>
         </div>
 

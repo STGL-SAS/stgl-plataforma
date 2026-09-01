@@ -5,13 +5,13 @@ import { useState } from 'react'
 import { CatalogoInsumos } from '@/modules/inventario-hydrex/components/CatalogoInsumos'
 import { CatalogoProductos } from '@/modules/inventario-hydrex/components/CatalogoProductos'
 import { CatalogoTiposInsumo } from '@/modules/inventario-hydrex/components/CatalogoTiposInsumo'
-import type { HydrexInsumo, HydrexProducto, HydrexProductoInsumo, HydrexTipoInsumo, PrecioRow } from '@/modules/inventario-hydrex/lib/tipos'
+import type { HydrexInsumo, HydrexProducto, HydrexProductoRecetaLinea, HydrexTipoInsumo, PrecioRow } from '@/modules/inventario-hydrex/lib/tipos'
 import {
   getInsumos,
   getPreciosProducto,
   getProductosConCosto,
   getProductosFull,
-  getRecetaPorProducto,
+  getProductoReceta,
   getStockProductos,
   getTiposInsumo,
 } from '@/modules/inventario-hydrex/lib/queries'
@@ -23,7 +23,7 @@ interface Props {
   initialProductos: HydrexProducto[]
   initialProductosCosto: HydrexProducto[]
   initialPreciosMap: Record<string, PrecioRow[]>
-  initialRecetaMap: Record<string, HydrexProductoInsumo[]>
+  initialRecetaMap: Record<string, HydrexProductoRecetaLinea[]>
   initialStockMap: Record<string, number>
 }
 
@@ -51,7 +51,7 @@ export function CatalogoPageClient({
       getInsumos(),
       getProductosFull(),
       getProductosConCosto(),
-      getRecetaPorProducto(),
+      getProductoReceta(),
       getStockProductos(),
     ])
     setTipos(t)

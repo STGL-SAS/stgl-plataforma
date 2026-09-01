@@ -99,14 +99,16 @@ export interface HydrexInsumo {
   activo: boolean
 }
 
-export interface HydrexProductoInsumo {
+export interface HydrexProductoRecetaLinea {
   id?: string
   producto_id?: string
-  insumo_id: string
+  insumo_id?: string | null
+  componente_producto_id?: string | null
   cantidad: number
   insumo?: Pick<HydrexInsumo, 'id' | 'nombre' | 'atributo_1' | 'atributo_2'> & {
     tipo?: Pick<HydrexTipoInsumo, 'codigo' | 'nombre'>
   }
+  componente?: Pick<HydrexProducto, 'id' | 'nombre' | 'tipo_producto'>
 }
 
 export interface HydrexProducto {
@@ -116,7 +118,7 @@ export interface HydrexProducto {
   activo: boolean
   costo_por_unidad?: number | null
   costo_incompleto?: boolean
-  receta?: HydrexProductoInsumo[]
+  receta?: HydrexProductoRecetaLinea[]
 }
 
 export interface HydrexVentaInput {

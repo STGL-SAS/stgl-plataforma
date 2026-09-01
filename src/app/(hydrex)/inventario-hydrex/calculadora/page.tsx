@@ -3,7 +3,7 @@ import {
   getEnvioTarifas,
   getPreciosProducto,
   getProductosConCosto,
-  getRecetaPorProducto,
+  getProductoReceta,
   getStockProductos,
 } from '@/modules/inventario-hydrex/lib/queries'
 import { stockProductosToMap } from '@/modules/inventario-hydrex/lib/stock-producto'
@@ -14,7 +14,7 @@ export const dynamic = 'force-dynamic'
 export default async function CalculadoraPage() {
   const [productos, recetaMap, stockProductos, componentes, envioTarifas] = await Promise.all([
     getProductosConCosto(true),
-    getRecetaPorProducto(),
+    getProductoReceta(),
     getStockProductos(),
     getComponentesCosto(),
     getEnvioTarifas(),

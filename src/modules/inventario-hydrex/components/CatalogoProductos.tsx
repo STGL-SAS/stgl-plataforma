@@ -3,9 +3,10 @@
 import { useState } from 'react'
 import { deletePrecio, deleteProducto } from '../actions/deletes'
 import { upsertPrecio, upsertProducto } from '../actions/mutations'
-import type { HydrexInsumo, HydrexProducto, HydrexProductoInsumo, PrecioRow } from '../lib/tipos'
+import type { HydrexInsumo, HydrexProducto, HydrexProductoRecetaLinea, PrecioRow } from '../lib/tipos'
 import { formatCostoDisplay, formatCOP } from '../lib/motor-calculo'
 import { formatRecetaResumen } from '../lib/format-receta'
+import { recetaInicialParaTipoProducto } from '../lib/tipo-producto'
 import {
   TIPO_PRECIO_OPTIONS,
   tipoPrecioDefault,
@@ -18,6 +19,7 @@ import { NumberInput } from '@/components/NumberInput'
 import {
   ProductoRecetaEditor,
   createEmptyRecetaLineas,
+  recetaLineaToDraft,
   type RecetaLineaDraft,
 } from './ProductoRecetaEditor'
 import { RowActions } from './RowActions'
@@ -34,7 +36,7 @@ interface Props {
   productos: HydrexProducto[]
   productosCosto: HydrexProducto[]
   insumos: HydrexInsumo[]
-  recetaMap: Record<string, HydrexProductoInsumo[]>
+  recetaMap: Record<string, HydrexProductoRecetaLinea[]>
   stockMap: Record<string, number>
   preciosMap: Record<string, PrecioRow[]>
   onRefresh: () => void
@@ -42,7 +44,7 @@ interface Props {
 
 function toEditState(
   producto: HydrexProducto | null,
-  recetaMap: Record<string, HydrexProductoInsumo[]>,
+  recetaMap: Record<string, HydrexProductoRecetaLinea[]>,
   insumos: HydrexInsumo[]
 ): ProductoEditState {
   if (!producto) {
@@ -61,8 +63,16 @@ function toEditState(
     activo: producto.activo,
     receta:
       lineas.length > 0
-        ? lineas.map((l) => ({ insumo_id: l.insumo_id, cantidad: l.cantidad }))
-        : createEmptyRecetaLineas(insumos),
+        ? recetaInicialParaTipoProducto(
+            producto.tipo_producto,
+            insumos,
+            lineas.map(recetaLineaToDraft)
+          )
+        : recetaInicialParaTipoProducto(
+            producto.tipo_producto,
+            insumos,
+            createEmptyRecetaLineas(insumos)
+          ),
   }
 }
 
@@ -81,8 +91,10 @@ export function CatalogoProductos({
     { type: 'producto' | 'precio'; id: string; nombre: string } | null
   >(null)
   const [confirming, setConfirming] = useState(false)
+  const [productoError, setProductoError] = useState<string | null>(null)
 
   const insumoById = new Map(insumos.map((i) => [i.id, i]))
+  const productoById = new Map(productos.map((p) => [p.id, p]))
 
   const precioProducto = precioEdit
     ? productos.find((p) => p.id === precioEdit.producto_id)
@@ -96,9 +108,14 @@ export function CatalogoProductos({
   async function saveProducto(e: React.FormEvent) {
     e.preventDefault()
     if (!editing) return
-    await upsertProducto(editing)
-    setEditing(null)
-    onRefresh()
+    setProductoError(null)
+    try {
+      await upsertProducto(editing)
+      setEditing(null)
+      onRefresh()
+    } catch (err) {
+      setProductoError(err instanceof Error ? err.message : 'Error al guardar')
+    }
   }
 
   async function savePrecio(e: React.FormEvent) {
@@ -154,12 +171,14 @@ export function CatalogoProductos({
             <span className="font-medium">Tipo de producto</span>
             <select
               value={editing.tipo_producto}
-              onChange={(e) =>
+              onChange={(e) => {
+                const tipo = e.target.value as ProductoEditState['tipo_producto']
                 setEditing({
                   ...editing,
-                  tipo_producto: e.target.value as ProductoEditState['tipo_producto'],
+                  tipo_producto: tipo,
+                  receta: recetaInicialParaTipoProducto(tipo, insumos, editing.receta),
                 })
-              }
+              }}
               className="rounded-md border px-3 py-2 text-sm"
             >
               <option value="individual">Individual</option>
@@ -177,9 +196,15 @@ export function CatalogoProductos({
 
           <ProductoRecetaEditor
             insumos={insumos}
+            productos={productos}
+            productoIdExcluir={editing.id}
             lineas={editing.receta}
             onChange={(receta) => setEditing({ ...editing, receta })}
           />
+
+          {productoError && (
+            <p className="sm:col-span-2 text-sm text-red-700">{productoError}</p>
+          )}
 
           <div className="flex gap-2 sm:col-span-2">
             <button type="submit" className="rounded-md bg-blue-600 px-4 py-2 text-sm text-white">
@@ -224,8 +249,8 @@ export function CatalogoProductos({
                     {receta.length > 0 ? (
                       <ul className="space-y-0.5">
                         {receta.map((l) => (
-                          <li key={l.id ?? `${l.insumo_id}-${l.cantidad}`}>
-                            {formatRecetaResumen([l], insumoById)}
+                          <li key={l.id ?? `${l.insumo_id ?? l.componente_producto_id}-${l.cantidad}`}>
+                            {formatRecetaResumen([l], insumoById, productoById)}
                           </li>
                         ))}
                       </ul>

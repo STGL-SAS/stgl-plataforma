@@ -6,7 +6,7 @@ import type {
   ComponenteCosto,
   HydrexInsumo,
   HydrexProducto,
-  HydrexProductoInsumo,
+  HydrexProductoRecetaLinea,
   HydrexStockProducto,
   HydrexStockRow,
   HydrexTipoInsumo,
@@ -92,15 +92,16 @@ export async function getProductosConCosto(activoOnly = false): Promise<HydrexPr
   })
 }
 
-export async function getRecetaPorProducto(): Promise<Record<string, HydrexProductoInsumo[]>> {
+export async function getProductoReceta(): Promise<Record<string, HydrexProductoRecetaLinea[]>> {
   const supabase = createAdminClient()
   const { data, error } = await supabase
-    .from('hydrex_producto_insumos')
+    .from('hydrex_producto_receta')
     .select(
       `
       id,
       producto_id,
       insumo_id,
+      componente_producto_id,
       cantidad,
       hydrex_insumos (
         id,
@@ -108,13 +109,18 @@ export async function getRecetaPorProducto(): Promise<Record<string, HydrexProdu
         atributo_1,
         atributo_2,
         hydrex_tipos_insumo!tipo_insumo_id (codigo, nombre)
+      ),
+      componente:hydrex_productos!componente_producto_id (
+        id,
+        nombre,
+        tipo_producto
       )
     `
     )
     .order('producto_id')
   if (error) throw new Error(error.message)
 
-  const map: Record<string, HydrexProductoInsumo[]> = {}
+  const map: Record<string, HydrexProductoRecetaLinea[]> = {}
   for (const row of data ?? []) {
     const productoId = row.producto_id as string
     const insumoJoined = row.hydrex_insumos as unknown
@@ -125,10 +131,16 @@ export async function getRecetaPorProducto(): Promise<Record<string, HydrexProdu
     const tipoRaw = (
       Array.isArray(tipoJoined) ? tipoJoined[0] : tipoJoined
     ) as Record<string, unknown> | null
-    const linea: HydrexProductoInsumo = {
+    const componenteJoined = row.componente as unknown
+    const componenteRaw = (
+      Array.isArray(componenteJoined) ? componenteJoined[0] : componenteJoined
+    ) as Record<string, unknown> | null
+
+    const linea: HydrexProductoRecetaLinea = {
       id: row.id as string,
       producto_id: productoId,
-      insumo_id: row.insumo_id as string,
+      insumo_id: (row.insumo_id as string | null) ?? null,
+      componente_producto_id: (row.componente_producto_id as string | null) ?? null,
       cantidad: Number(row.cantidad),
       insumo: insumoRaw
         ? {
@@ -142,6 +154,13 @@ export async function getRecetaPorProducto(): Promise<Record<string, HydrexProdu
                   nombre: tipoRaw.nombre as string,
                 }
               : undefined,
+          }
+        : undefined,
+      componente: componenteRaw
+        ? {
+            id: componenteRaw.id as string,
+            nombre: componenteRaw.nombre as string,
+            tipo_producto: componenteRaw.tipo_producto as 'individual' | 'caja',
           }
         : undefined,
     }

@@ -11,7 +11,7 @@ import {
   getEnvioTarifas,
   getPreciosProducto,
   getProductosConCosto,
-  getRecetaPorProducto,
+  getProductoReceta,
   getStockProductos,
 } from '@/modules/inventario-hydrex/lib/queries'
 import { stockProductosToMap } from '@/modules/inventario-hydrex/lib/stock-producto'
@@ -26,7 +26,7 @@ async function loadHydrexCatalog() {
       getComponentesCosto(),
       getEnvioTarifas(),
       getClientesHydrex(),
-      getRecetaPorProducto(),
+      getProductoReceta(),
       getStockProductos(),
     ])
     const stockMap = stockProductosToMap(stockProductos)

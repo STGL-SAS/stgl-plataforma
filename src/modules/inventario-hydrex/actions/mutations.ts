@@ -123,12 +123,19 @@ function normalizeInsumo(row: Record<string, unknown>, tipo?: HydrexTipoInsumo):
   }
 }
 
+export type UpsertProductoRecetaLinea = {
+  tipo_linea: 'insumo' | 'producto'
+  insumo_id?: string
+  componente_producto_id?: string
+  cantidad: number
+}
+
 export type UpsertProductoInput = {
   id?: string
   nombre: string
   tipo_producto: 'individual' | 'caja'
   activo: boolean
-  receta: { insumo_id: string; cantidad: number }[]
+  receta: UpsertProductoRecetaLinea[]
 }
 
 export async function upsertProducto(input: UpsertProductoInput) {
@@ -136,32 +143,58 @@ export async function upsertProducto(input: UpsertProductoInput) {
   const tipo = input.tipo_producto === 'caja' ? 'caja' : 'individual'
   const nombre = input.nombre.trim()
   const recetaRaw = input.receta
+  const editingProductoId = input.id ?? null
 
   if (!nombre) {
     throw new Error('El nombre del producto es obligatorio.')
   }
 
   if (recetaRaw.length === 0) {
-    throw new Error('La receta debe tener al menos una línea de insumo.')
+    throw new Error('La receta debe tener al menos una línea.')
   }
 
-  const receta: { insumo_id: string; cantidad: number }[] = []
-  const seen = new Set<string>()
+  const receta: {
+    insumo_id: string | null
+    componente_producto_id: string | null
+    cantidad: number
+  }[] = []
+  const seenInsumos = new Set<string>()
+  const seenProductos = new Set<string>()
 
   for (const line of recetaRaw) {
-    const insumoId = line.insumo_id.trim()
     const cantidad = line.cantidad
-    if (!insumoId) {
-      throw new Error('Cada línea de receta debe tener un insumo seleccionado.')
-    }
     if (!Number.isFinite(cantidad) || cantidad <= 0) {
       throw new Error('Cada línea de receta debe tener una cantidad mayor a 0.')
     }
-    if (seen.has(insumoId)) {
-      throw new Error('No puedes repetir el mismo insumo en la receta — suma las cantidades en una sola línea.')
+
+    if (line.tipo_linea === 'producto') {
+      const componenteId = line.componente_producto_id?.trim() ?? ''
+      if (!componenteId) {
+        throw new Error('Cada línea de tipo producto debe tener un producto seleccionado.')
+      }
+      if (editingProductoId && componenteId === editingProductoId) {
+        throw new Error('Un producto no puede incluirse a sí mismo en su receta.')
+      }
+      if (seenProductos.has(componenteId)) {
+        throw new Error(
+          'No puedes repetir el mismo producto en la receta — suma las cantidades en una sola línea.'
+        )
+      }
+      seenProductos.add(componenteId)
+      receta.push({ insumo_id: null, componente_producto_id: componenteId, cantidad })
+    } else {
+      const insumoId = line.insumo_id?.trim() ?? ''
+      if (!insumoId) {
+        throw new Error('Cada línea de tipo insumo debe tener un insumo seleccionado.')
+      }
+      if (seenInsumos.has(insumoId)) {
+        throw new Error(
+          'No puedes repetir el mismo insumo en la receta — suma las cantidades en una sola línea.'
+        )
+      }
+      seenInsumos.add(insumoId)
+      receta.push({ insumo_id: insumoId, componente_producto_id: null, cantidad })
     }
-    seen.add(insumoId)
-    receta.push({ insumo_id: insumoId, cantidad })
   }
 
   const row = {
@@ -182,15 +215,16 @@ export async function upsertProducto(input: UpsertProductoInput) {
   }
 
   const { error: deleteError } = await supabase
-    .from('hydrex_producto_insumos')
+    .from('hydrex_producto_receta')
     .delete()
     .eq('producto_id', productoId)
   if (deleteError) throwFriendlyDbError(deleteError)
 
-  const { error: insertError } = await supabase.from('hydrex_producto_insumos').insert(
+  const { error: insertError } = await supabase.from('hydrex_producto_receta').insert(
     receta.map((line) => ({
       producto_id: productoId,
       insumo_id: line.insumo_id,
+      componente_producto_id: line.componente_producto_id,
       cantidad: line.cantidad,
     }))
   )

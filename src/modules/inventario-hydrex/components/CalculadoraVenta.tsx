@@ -6,7 +6,7 @@ import type {
   Canal,
   ComponenteCosto,
   HydrexProducto,
-  HydrexProductoInsumo,
+  HydrexProductoRecetaLinea,
   PrecioRow,
   TipoPrecio,
 } from '../lib/tipos'
@@ -37,7 +37,7 @@ export interface CalculadoraState {
 interface Props {
   productos: HydrexProducto[]
   preciosMap: Record<string, PrecioRow[]>
-  recetaMap?: Record<string, HydrexProductoInsumo[]>
+  recetaMap?: Record<string, HydrexProductoRecetaLinea[]>
   stockMap?: Record<string, number>
   componentes: ComponenteCosto[]
   envioTarifas: EnvioTarifa[]
@@ -198,7 +198,9 @@ export function CalculadoraVenta({
           <p className="mb-2 text-sm font-medium text-zinc-800">Receta por unidad vendida</p>
           <ul className="text-sm text-zinc-600 space-y-1">
             {(recetaMap[productoId] ?? []).map((l) => (
-              <li key={l.id ?? `${l.insumo_id}-${l.cantidad}`}>{formatRecetaLinea(l)}</li>
+              <li key={l.id ?? `${l.insumo_id ?? l.componente_producto_id}-${l.cantidad}`}>
+                {formatRecetaLinea(l)}
+              </li>
             ))}
           </ul>
         </div>
