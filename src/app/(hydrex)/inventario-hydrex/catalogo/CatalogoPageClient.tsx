@@ -14,6 +14,7 @@ import {
   getProductoReceta,
   getStockProductos,
   getTiposInsumo,
+  getUnidadesEquivalentesPorProducto,
 } from '@/modules/inventario-hydrex/lib/queries'
 import { stockProductosToMap } from '@/modules/inventario-hydrex/lib/stock-producto'
 
@@ -25,6 +26,7 @@ interface Props {
   initialPreciosMap: Record<string, PrecioRow[]>
   initialRecetaMap: Record<string, HydrexProductoRecetaLinea[]>
   initialStockMap: Record<string, number>
+  initialUnidadesEquivMap: Record<string, number>
 }
 
 export function CatalogoPageClient({
@@ -35,6 +37,7 @@ export function CatalogoPageClient({
   initialPreciosMap,
   initialRecetaMap,
   initialStockMap,
+  initialUnidadesEquivMap,
 }: Props) {
   const router = useRouter()
   const [tipos, setTipos] = useState(initialTipos)
@@ -44,15 +47,17 @@ export function CatalogoPageClient({
   const [preciosMap, setPreciosMap] = useState(initialPreciosMap)
   const [recetaMap, setRecetaMap] = useState(initialRecetaMap)
   const [stockMap, setStockMap] = useState(initialStockMap)
+  const [unidadesEquivMap, setUnidadesEquivMap] = useState(initialUnidadesEquivMap)
 
   async function refresh() {
-    const [t, i, p, pc, rm, sp] = await Promise.all([
+    const [t, i, p, pc, rm, sp, ue] = await Promise.all([
       getTiposInsumo(),
       getInsumos(),
       getProductosFull(),
       getProductosConCosto(),
       getProductoReceta(),
       getStockProductos(),
+      getUnidadesEquivalentesPorProducto(),
     ])
     setTipos(t)
     setInsumos(i)
@@ -60,6 +65,7 @@ export function CatalogoPageClient({
     setProductosCosto(pc)
     setRecetaMap(rm)
     setStockMap(stockProductosToMap(sp))
+    setUnidadesEquivMap(ue)
     const map: Record<string, PrecioRow[]> = {}
     for (const prod of p) {
       map[prod.id] = await getPreciosProducto(prod.id)
@@ -85,6 +91,7 @@ export function CatalogoPageClient({
           insumos={insumos}
           recetaMap={recetaMap}
           stockMap={stockMap}
+          unidadesEquivMap={unidadesEquivMap}
           preciosMap={preciosMap}
           onRefresh={refresh}
         />

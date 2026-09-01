@@ -38,6 +38,7 @@ interface Props {
   insumos: HydrexInsumo[]
   recetaMap: Record<string, HydrexProductoRecetaLinea[]>
   stockMap: Record<string, number>
+  unidadesEquivMap: Record<string, number>
   preciosMap: Record<string, PrecioRow[]>
   onRefresh: () => void
 }
@@ -82,6 +83,7 @@ export function CatalogoProductos({
   insumos,
   recetaMap,
   stockMap,
+  unidadesEquivMap,
   preciosMap,
   onRefresh,
 }: Props) {
@@ -229,6 +231,7 @@ export function CatalogoProductos({
               <th className="px-3 py-2 text-left">Tipo</th>
               <th className="px-3 py-2 text-left">Receta</th>
               <th className="px-3 py-2 text-right">Stock disp. (calc.)</th>
+              <th className="px-3 py-2 text-right">Unid. equiv. (auto)</th>
               <th className="px-3 py-2 text-right">Costo/u (auto)</th>
               <th className="px-3 py-2 text-center">Estado</th>
               <th className="px-3 py-2">Precios</th>
@@ -241,6 +244,7 @@ export function CatalogoProductos({
               const precios = preciosMap[p.id] ?? []
               const receta = recetaMap[p.id] ?? []
               const stock = stockMap[p.id]
+              const unidadesEquiv = unidadesEquivMap[p.id] ?? 1
               return (
                 <tr key={p.id} className={`border-t ${!p.activo ? 'opacity-60' : ''}`}>
                   <td className="px-3 py-2 font-medium">{p.nombre}</td>
@@ -268,6 +272,9 @@ export function CatalogoProductos({
                     }`}
                   >
                     {stock === undefined ? '—' : stock}
+                  </td>
+                  <td className="px-3 py-2 text-right tabular-nums text-zinc-600">
+                    {unidadesEquiv}
                   </td>
                   <td className="px-3 py-2 text-right text-zinc-600">
                     {formatCostoDisplay(costo?.costo_por_unidad)}

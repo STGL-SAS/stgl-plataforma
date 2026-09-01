@@ -106,6 +106,7 @@ export function CalculadoraVenta({
       componentesActivos,
       incluyeEnvio,
       valorEnvio,
+      unidadesEquivalentes: producto.unidades_equivalentes ?? 1,
     })
   }, [
     producto,
@@ -339,6 +340,7 @@ export function useCalculadoraResultado(
       componentesActivos: state.componentesActivos,
       incluyeEnvio: state.incluyeEnvio,
       valorEnvio: state.valorEnvio,
+      unidadesEquivalentes: producto.unidades_equivalentes ?? 1,
     })
   }, [productos, state, componentes])
 }

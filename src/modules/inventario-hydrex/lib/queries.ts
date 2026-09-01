@@ -75,13 +75,41 @@ export async function getProductosConCosto(activoOnly = false): Promise<HydrexPr
   }
   const { data, error } = await q.order('nombre')
   if (error) throw new Error(error.message)
+
+  const ids = (data ?? []).map((r) => r.producto_id as string)
+  const metaMap = new Map<string, { activo: boolean; unidades_equivalentes: number }>()
+  if (ids.length > 0) {
+    const [{ data: meta, error: metaError }, { data: unidades, error: unidadesError }] =
+      await Promise.all([
+        supabase.from('hydrex_productos').select('id, activo').in('id', ids),
+        supabase
+          .from('hydrex_productos_unidades_equivalentes')
+          .select('producto_id, unidades_equivalentes')
+          .in('producto_id', ids),
+      ])
+    if (metaError) throw new Error(metaError.message)
+    if (unidadesError) throw new Error(unidadesError.message)
+    const unidadesMap = new Map(
+      (unidades ?? []).map((u) => [u.producto_id as string, Number(u.unidades_equivalentes)])
+    )
+    for (const m of meta ?? []) {
+      metaMap.set(m.id as string, {
+        activo: m.activo as boolean,
+        unidades_equivalentes: unidadesMap.get(m.id as string) ?? 1,
+      })
+    }
+  }
+
   return (data ?? []).map((r) => {
+    const productoId = r.producto_id as string
+    const meta = metaMap.get(productoId)
     const costoIncompleto = Boolean(r.costo_incompleto)
     return {
-      id: r.producto_id as string,
+      id: productoId,
       tipo_producto: r.tipo_producto as HydrexProducto['tipo_producto'],
       nombre: r.nombre as string,
-      activo: true,
+      activo: meta?.activo ?? true,
+      unidades_equivalentes: meta?.unidades_equivalentes ?? 1,
       costo_incompleto: costoIncompleto,
       costo_por_unidad: costoIncompleto
         ? null
@@ -90,6 +118,17 @@ export async function getProductosConCosto(activoOnly = false): Promise<HydrexPr
           : null,
     }
   })
+}
+
+export async function getUnidadesEquivalentesPorProducto(): Promise<Record<string, number>> {
+  const supabase = createAdminClient()
+  const { data, error } = await supabase
+    .from('hydrex_productos_unidades_equivalentes')
+    .select('producto_id, unidades_equivalentes')
+  if (error) throw new Error(error.message)
+  return Object.fromEntries(
+    (data ?? []).map((r) => [r.producto_id as string, Number(r.unidades_equivalentes)])
+  )
 }
 
 export async function getProductoReceta(): Promise<Record<string, HydrexProductoRecetaLinea[]>> {
@@ -211,9 +250,11 @@ export async function getComponentesCosto(canal?: Canal, activoOnly = true): Pro
       (c) => !c.canales_aplica?.length || c.canales_aplica.includes(canal)
     )
   }
-  return rows.map((c) => ({
+  return (data ?? []).map((c) => ({
     ...c,
     valor: Number(c.valor),
+    activo: c.activo ?? true,
+    prorratea_por_lote: Boolean(c.prorratea_por_lote),
   }))
 }
 

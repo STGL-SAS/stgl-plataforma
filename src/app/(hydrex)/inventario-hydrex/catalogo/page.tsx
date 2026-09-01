@@ -6,6 +6,7 @@ import {
   getProductoReceta,
   getStockProductos,
   getTiposInsumo,
+  getUnidadesEquivalentesPorProducto,
 } from '@/modules/inventario-hydrex/lib/queries'
 import { stockProductosToMap } from '@/modules/inventario-hydrex/lib/stock-producto'
 import { CatalogoPageClient } from './CatalogoPageClient'
@@ -13,13 +14,15 @@ import { CatalogoPageClient } from './CatalogoPageClient'
 export const dynamic = 'force-dynamic'
 
 export default async function CatalogoPage() {
-  const [tipos, insumos, productos, productosCosto, recetaMap, stockProductos] = await Promise.all([
+  const [tipos, insumos, productos, productosCosto, recetaMap, stockProductos, unidadesEquivMap] =
+    await Promise.all([
     getTiposInsumo(),
     getInsumos(),
     getProductosFull(),
     getProductosConCosto(),
     getProductoReceta(),
     getStockProductos(),
+    getUnidadesEquivalentesPorProducto(),
   ])
   const stockMap = stockProductosToMap(stockProductos)
   const preciosMap: Record<string, Awaited<ReturnType<typeof getPreciosProducto>>> = {}
@@ -35,6 +38,7 @@ export default async function CatalogoPage() {
       initialPreciosMap={preciosMap}
       initialRecetaMap={recetaMap}
       initialStockMap={stockMap}
+      initialUnidadesEquivMap={unidadesEquivMap}
     />
   )
 }

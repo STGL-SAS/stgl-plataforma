@@ -296,10 +296,30 @@ export async function upsertPrecio(input: Record<string, unknown>) {
   }
 }
 
-export async function upsertComponente(input: Record<string, unknown>) {
+export type UpsertComponenteInput = {
+  id?: string
+  nombre: string
+  tipo_calculo: string
+  valor?: number
+  /** Porcentaje en UI (15 = 15%); solo si tipo_calculo es porcentaje */
+  valor_pct_ui?: number | null
+  categoria: string
+  canales_aplica: string[]
+  premarcado_canales: string[]
+  activo: boolean
+  orden: number
+  prorratea_por_lote: boolean
+}
+
+export async function upsertComponente(input: UpsertComponenteInput) {
   const supabase = createAdminClient()
   const negocioId = await getHydrexNegocioId()
-  const row = { ...input, negocio_id: negocioId }
+  const valor =
+    input.tipo_calculo === 'porcentaje'
+      ? descuentoPctUiToFraction(input.valor_pct_ui ?? 0)
+      : (input.valor ?? 0)
+  const { valor_pct_ui: _omit, ...rest } = input
+  const row = { ...rest, valor, negocio_id: negocioId }
   if (input.id) {
     const { error } = await supabase.from('hydrex_componentes_costo').update(row).eq('id', input.id)
     if (error) throwFriendlyDbError(error)
@@ -307,6 +327,15 @@ export async function upsertComponente(input: Record<string, unknown>) {
     const { error } = await supabase.from('hydrex_componentes_costo').insert(row)
     if (error) throwFriendlyDbError(error)
   }
+}
+
+export async function toggleComponenteActivo(id: string, activo: boolean) {
+  const supabase = createAdminClient()
+  const { error } = await supabase
+    .from('hydrex_componentes_costo')
+    .update({ activo })
+    .eq('id', id)
+  if (error) throwFriendlyDbError(error)
 }
 
 export async function upsertEnvioTarifa(input: Record<string, unknown>) {

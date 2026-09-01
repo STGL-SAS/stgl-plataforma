@@ -13,6 +13,8 @@ export interface ComponenteCosto {
   valor: number
   premarcado_canales: string[]
   canales_aplica?: string[]
+  activo?: boolean
+  prorratea_por_lote?: boolean
 }
 
 export interface CalculoVentaInput {
@@ -24,6 +26,8 @@ export interface CalculoVentaInput {
   componentesActivos: Record<string, boolean>
   incluyeEnvio: boolean
   valorEnvio: number
+  /** Unidades del lote para prorratear componentes (vista hydrex_productos_unidades_equivalentes) */
+  unidadesEquivalentes?: number
 }
 
 export interface ComponenteAplicado {
@@ -116,6 +120,7 @@ export interface HydrexProducto {
   tipo_producto: 'individual' | 'caja'
   nombre: string
   activo: boolean
+  unidades_equivalentes?: number
   costo_por_unidad?: number | null
   costo_incompleto?: boolean
   receta?: HydrexProductoRecetaLinea[]

@@ -79,12 +79,9 @@ export async function deletePrecio(id: string): Promise<DeleteResult> {
 
 export async function deleteComponente(id: string, nombre: string): Promise<DeleteResult> {
   const supabase = createAdminClient()
-  const { error } = await supabase.from('hydrex_componentes_costo').update({ activo: false }).eq('id', id)
+  const { error } = await supabase.from('hydrex_componentes_costo').delete().eq('id', id)
   if (error) throw new Error(error.message)
-  return {
-    action: 'deactivated',
-    message: `"${nombre}" desactivado. Dejará de aplicarse en nuevas ventas; el historial se conserva.`,
-  }
+  return { action: 'deleted', message: `"${nombre}" eliminado.` }
 }
 
 export async function deleteEnvioTarifa(id: string, nombre: string): Promise<DeleteResult> {

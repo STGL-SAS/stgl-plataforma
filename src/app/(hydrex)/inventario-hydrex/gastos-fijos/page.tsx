@@ -25,6 +25,7 @@ export default async function GastosFijosPage() {
       componentesActivos: {},
       incluyeEnvio: false,
       valorEnvio: 0,
+      unidadesEquivalentes: ref.unidades_equivalentes ?? 1,
     })
     gananciaPorUnidadRef = r.gananciaPorUnidad ?? 0
   }

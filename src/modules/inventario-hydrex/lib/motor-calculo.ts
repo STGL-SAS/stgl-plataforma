@@ -45,18 +45,27 @@ function estaActivo(
 function calcularMontoComponente(
   componente: ComponenteCosto,
   precioVentaUnitario: number,
-  cantidad: number
+  cantidad: number,
+  unidadesEquivalentes: number
 ): number {
+  let monto: number
   switch (componente.tipo_calculo) {
     case 'porcentaje':
-      return componente.valor * precioVentaUnitario * cantidad
+      monto = componente.valor * precioVentaUnitario * cantidad
+      break
     case 'valor_fijo':
-      return componente.valor
+      monto = componente.valor
+      break
     case 'valor_por_unidad':
-      return componente.valor * cantidad
+      monto = componente.valor * cantidad
+      break
     default:
-      return 0
+      monto = 0
   }
+  if (componente.prorratea_por_lote && unidadesEquivalentes > 0) {
+    monto /= unidadesEquivalentes
+  }
+  return monto
 }
 
 function calificar(margenPct: number, gananciaTotal: number): Calificacion {
@@ -81,8 +90,10 @@ export function calcularVenta(input: CalculoVentaInput): CalculoVentaResultado {
     componentesActivos,
     incluyeEnvio,
     valorEnvio,
+    unidadesEquivalentes = 1,
   } = input
 
+  const unidadesLote = unidadesEquivalentes > 0 ? unidadesEquivalentes : 1
   const costoProductoTotal = costoProductoUnitario * cantidad
   const ingresoTotal = precioVentaUnitario * cantidad
 
@@ -90,7 +101,7 @@ export function calcularVenta(input: CalculoVentaInput): CalculoVentaResultado {
     (componente) => {
       const activo = estaActivo(componente, canal, componentesActivos)
       const montoAplicado = activo
-        ? calcularMontoComponente(componente, precioVentaUnitario, cantidad)
+        ? calcularMontoComponente(componente, precioVentaUnitario, cantidad, unidadesLote)
         : 0
       return {
         componenteId: componente.id,

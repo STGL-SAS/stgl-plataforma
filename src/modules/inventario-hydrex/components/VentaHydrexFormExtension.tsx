@@ -59,6 +59,7 @@ export function VentaHydrexFormExtension({
       componentesActivos: calcState.componentesActivos,
       incluyeEnvio: calcState.incluyeEnvio,
       valorEnvio: calcState.valorEnvio,
+      unidadesEquivalentes: producto.unidades_equivalentes ?? 1,
     })
   }, [calcState, productos, componentes])
 
@@ -82,6 +83,7 @@ export function VentaHydrexFormExtension({
         componentesActivos: state.componentesActivos,
         incluyeEnvio: state.incluyeEnvio,
         valorEnvio: state.valorEnvio,
+        unidadesEquivalentes: producto.unidades_equivalentes ?? 1,
       })
       onVentaChange({
         producto_id: state.productoId,
