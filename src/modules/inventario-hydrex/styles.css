@@ -1,0 +1,53 @@
+/* Legibilidad mínima del módulo — evita texto claro heredado del dark mode del SO */
+.hydrex-root {
+  color: #18181b;
+  color-scheme: light;
+}
+
+.hydrex-root :where(h1, h2, h3, h4, p, li, td, th, label) {
+  color: #18181b;
+}
+
+.hydrex-root :where(thead) {
+  background-color: #f4f4f5;
+}
+
+.hydrex-root :where(th) {
+  color: #52525b;
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.hydrex-root :where(tbody tr) {
+  border-top: 1px solid #e4e4e7;
+}
+
+.hydrex-root :where(tbody tr:hover) {
+  background-color: #fafafa;
+}
+
+.hydrex-root :where(input, select, textarea) {
+  color: #18181b;
+  background-color: #ffffff;
+  border-color: #d4d4d8;
+}
+
+.hydrex-root :where(input::placeholder, textarea::placeholder) {
+  color: #a1a1aa;
+}
+
+.hydrex-root :where(.rounded-lg.border, .overflow-x-auto.rounded-lg.border) {
+  border-color: #e4e4e7;
+  background-color: #ffffff;
+}
+
+.hydrex-root :where(ul.rounded-lg.border) {
+  border-color: #e4e4e7;
+  background-color: #ffffff;
+}
+
+.hydrex-root :where(ul.rounded-lg.border > li) {
+  border-color: #e4e4e7;
+}
