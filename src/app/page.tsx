@@ -15,6 +15,12 @@ export default function Home() {
           Ir a Contabilidad
         </Link>
         <Link
+          href="/documentos"
+          className="mt-3 inline-flex rounded-md border border-zinc-300 px-5 py-2.5 text-sm font-medium text-zinc-800 hover:bg-zinc-50"
+        >
+          Documentos — OneDrive
+        </Link>
+        <Link
           href="/hardtech/ventas"
           className="mt-3 inline-flex rounded-md border border-zinc-300 px-5 py-2.5 text-sm font-medium text-zinc-800 hover:bg-zinc-50"
         >

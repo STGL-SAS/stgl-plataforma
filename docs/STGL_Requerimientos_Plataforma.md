@@ -149,6 +149,8 @@ A diferencia de los costos variables de HYDREX (sección 4.4-4.5, que dependen d
 - Aplica igual para HANGARC, VirtualWaiter, STGL, y también HYDREX (sus gastos fijos como Shopify, correo, dominio, viven aquí).
 - Se puede agregar cualquier concepto nuevo sin restricción — hosting, licencias, contabilidad, lo que vaya surgiendo — sin necesidad de definir una lista cerrada de antemano.
 - Para HANGARC y VirtualWaiter, que aún no tienen ventas activas, **este módulo es su principal fuente de "costos"** por ahora — no necesitan el motor de componentes configurables de HYDREX, que solo aplica donde hay ventas con múltiples canales y comisiones variables.
+- **Gastos ocasionales**: además de los fijos, existe una tabla genérica `gastos_ocasionales` (concepto, monto, fecha, negocio, quién lo pagó) para gastos sueltos que no son periódicos ni están ligados a una venta puntual — pensada para ser reutilizable por cualquier negocio, no solo HARDTECH (donde surgió la necesidad).
+- **Tratamiento especial en HARDTECH**: como HARDTECH no tiene cuenta bancaria propia (sección 4C.8), sus gastos fijos y ocasionales **restan directamente de la utilidad** en el cálculo de balance. En los demás negocios, estos gastos siguen siendo solo informativos (se muestran, pero no descuentan automáticamente del balance de la cuenta bancaria real).
 
 ---
 
@@ -227,8 +229,7 @@ Un "to-do" evolucionado a sistema de seguimiento tipo expediente:
 - La plataforma guarda la **ficha de cada documento** (nombre, categoría, negocio al que pertenece — incluyendo STGL como categoría propia, tipo de documento, fecha) junto con el enlace/ID real del archivo en OneDrive.
 - **La plataforma no es solo un índice de lectura**: desde ahí también se debe poder **subir documentos nuevos y crear carpetas**, y que esto se refleje directamente en la estructura real de OneDrive (vía Microsoft Graph API) — es decir, la plataforma es la puerta de entrada tanto para consultar como para organizar el archivero, sin tener que entrar aparte a OneDrive para eso.
 - Conexión técnica vía Microsoft Graph API (gratuita para este uso), autenticada con la cuenta de OneDrive/correo de STGL (ver sección 10).
-
-**Nota sobre HARDTECH y Google Drive**: los documentos de HARDTECH hoy viven en Google Drive, no en OneDrive. Técnicamente sí es posible integrar Google Drive con la misma lógica (Google también tiene una API gratuita para esto, equivalente a Microsoft Graph). Sin embargo, mantener dos integraciones de almacenamiento (OneDrive + Google Drive) duplica el trabajo y rompe la estructura limpia que se definió en la sección 11 — cada integración es código aparte que hay que mantener. La recomendación es **migrar los documentos de HARDTECH a la misma cuenta de OneDrive de STGL** cuando se llegue a esa fase, y usar una sola integración para los cuatro negocios. Si prefieren mantener HARDTECH en Google Drive, es viable, pero implica una fase de desarrollo adicional dedicada solo a esa segunda integración.
+- Los documentos de HARDTECH ya están migrados a esta misma cuenta de OneDrive, así que la integración es una sola para los cuatro negocios — no se necesita una segunda integración con Google Drive.
 
 ---
 
@@ -358,6 +359,14 @@ Tablero por negocio (lista o kanban) con estado de cada tarea/caso; al entrar a 
 - Parámetros generales de HYDREX (componentes de costo, valores de comisiones, impuestos).
 - Porcentajes de participación de los socios por negocio.
 - Gestión de usuarios y roles (superadmin / usuario normal) — pensado para cuando haya más gente, aunque hoy solo la usen Tomás y Samuel.
+
+### 15.8 HARDTECH — Ventas, mantenimientos y fondo de socios
+- **Ventas**: lista con estado (pendiente de compra / pendiente de pago final / cerrada), formulario por etapas (cotización, anticipo, compra, gastos extra, pago final, comisión a terceros).
+- **Mantenimientos**: lista y formulario separado, con honorarios (propio o técnico externo), insumos y domicilio.
+- **Pagos entre socios**: vista de cuánto le "debe" HARDTECH a cada socio (o viceversa) por plata operativa que pasó por cuentas personales.
+- **Cuenta USD**: saldo disponible en la plataforma de cambio de divisas, con historial de movimientos.
+- **Gastos**: fijos y ocasionales de HARDTECH, con quién los pagó.
+- **Clientes**: reutiliza el módulo general de clientes (sección 4A), filtrado a HARDTECH.
 
 ---
 
