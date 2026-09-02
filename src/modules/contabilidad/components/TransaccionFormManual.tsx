@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { createTransaccionManual } from '../actions/transacciones'
 import {
   VentaHydrexFormExtension,
@@ -26,6 +26,7 @@ interface Props {
   cuentas: CuentaBancaria[]
   categoriasSugeridas: string[]
   hydrexCatalog?: HydrexCatalog
+  hydrexCatalogError?: string
 }
 
 export function TransaccionFormManual({
@@ -33,6 +34,7 @@ export function TransaccionFormManual({
   cuentas,
   categoriasSugeridas,
   hydrexCatalog,
+  hydrexCatalogError,
 }: Props) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
@@ -47,6 +49,10 @@ export function TransaccionFormManual({
     const n = negocios.find((x) => x.id === negocioId)
     return n?.codigo === 'HYDREX' && tipo === 'ingreso'
   }, [negocios, negocioId, tipo])
+
+  useEffect(() => {
+    if (!esHydrexIngreso) setVentaHydrex(null)
+  }, [esHydrexIngreso])
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -64,10 +70,19 @@ export function TransaccionFormManual({
     }
 
     try {
-      if (esHydrexIngreso && ventaHydrex && hydrexCatalog) {
+      if (esHydrexIngreso) {
+        if (!hydrexCatalog) {
+          throw new Error(
+            hydrexCatalogError ??
+              'No se pudo cargar el catálogo HYDREX. Recargá la página o contactá soporte.'
+          )
+        }
+        if (!ventaHydrex) {
+          throw new Error('Completá el detalle de venta HYDREX (producto, cantidad y precio).')
+        }
         if (!ventaHydrex.costo_disponible || !ventaHydrex.venta_calculo.costoDisponible) {
           throw new Error(
-            'No se puede guardar la venta: el producto no tiene costo conocido (faltan compras de insumos).'
+            'No se puede guardar la venta: no hay stock de compras suficiente para el costo FIFO de esta cantidad.'
           )
         }
         const calc = ventaHydrex.venta_calculo
@@ -91,7 +106,7 @@ export function TransaccionFormManual({
             calificacion: calc.calificacion!,
           },
         })
-      } else {
+      } else if (!esHydrexIngreso) {
         await createTransaccionManual({
           ...base,
           tipo: fd.get('tipo') as TipoTransaccionManual,
@@ -156,6 +171,12 @@ export function TransaccionFormManual({
           <option value="egreso">Egreso</option>
         </select>
       </label>
+
+      {esHydrexIngreso && hydrexCatalogError && (
+        <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+          No se pudo cargar el detalle de venta HYDREX: {hydrexCatalogError}
+        </div>
+      )}
 
       {esHydrexIngreso && hydrexCatalog ? (
         <VentaHydrexFormExtension

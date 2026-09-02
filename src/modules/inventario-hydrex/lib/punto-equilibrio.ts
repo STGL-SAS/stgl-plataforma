@@ -1,4 +1,4 @@
-import { calcularVenta, productoCostoDisponible } from './motor-calculo'
+import { calcularVenta } from './motor-calculo'
 import type { Canal, ComponenteCosto, HydrexProducto, TipoPrecio } from './tipos'
 import { CANALES } from './tipos'
 
@@ -26,6 +26,7 @@ export function cantidadEfectivaParaPrecio(tipoPrecio: TipoPrecio, cantidad: num
 }
 
 export function calcularVentaParaCanal(
+  costoProductoTotal: number | null,
   producto: HydrexProducto,
   state: EstadoCalculoVenta,
   componentes: ComponenteCosto[],
@@ -36,7 +37,7 @@ export function calcularVentaParaCanal(
   )
   const cantidad = cantidadEfectivaParaPrecio(state.tipoPrecio, state.cantidad)
   return calcularVenta({
-    costoProductoUnitario: producto.costo_por_unidad,
+    costoProductoTotal,
     precioVentaUnitario: state.precioUnitario,
     cantidad,
     canal,
@@ -65,17 +66,24 @@ export interface GananciaEquilibrioError {
 }
 
 export function calcularGananciaEquilibrio(
+  costoProductoTotal: number | null,
   producto: HydrexProducto,
   calcState: EstadoCalculoVenta,
   componentes: ComponenteCosto[],
   modoCanal: ModoCanalEquilibrio
 ): GananciaEquilibrioResultado | GananciaEquilibrioError {
-  if (!productoCostoDisponible(producto)) {
+  if (costoProductoTotal == null) {
     return { ok: false, canalesExcluidos: [] }
   }
 
   if (modoCanal === 'especifico') {
-    const resultado = calcularVentaParaCanal(producto, calcState, componentes, calcState.canal)
+    const resultado = calcularVentaParaCanal(
+      costoProductoTotal,
+      producto,
+      calcState,
+      componentes,
+      calcState.canal
+    )
     if (!esResultadoValido(resultado)) {
       return {
         ok: false,
@@ -91,7 +99,13 @@ export function calcularGananciaEquilibrio(
 
   const porCanal = CANALES.map(({ value: canal }) => ({
     canal,
-    resultado: calcularVentaParaCanal(producto, calcState, componentes, canal),
+    resultado: calcularVentaParaCanal(
+      costoProductoTotal,
+      producto,
+      calcState,
+      componentes,
+      canal
+    ),
   }))
 
   const canalesExcluidos: { canal: Canal; motivo: string }[] = []

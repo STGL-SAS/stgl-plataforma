@@ -479,7 +479,7 @@ export interface TransaccionConVentaInput {
 export async function createTransaccionConVentaHydrex(input: TransaccionConVentaInput) {
   if (input.venta.costo_producto_unitario == null) {
     throw new Error(
-      'No se puede registrar la venta: el producto no tiene costo conocido (faltan compras de insumos).'
+      'No se puede registrar la venta: no hay stock de compras suficiente para el costo FIFO de esta cantidad.'
     )
   }
   if (

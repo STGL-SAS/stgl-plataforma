@@ -120,6 +120,27 @@ export async function getProductosConCosto(activoOnly = false): Promise<HydrexPr
   })
 }
 
+export async function obtenerCostoProductoFifo(
+  productoId: string,
+  cantidad: number
+): Promise<{ costo: number | null; incompleto: boolean }> {
+  if (!productoId || cantidad <= 0) {
+    return { costo: null, incompleto: true }
+  }
+  const supabase = createAdminClient()
+  const { data, error } = await supabase.rpc('fn_hydrex_costo_producto_fifo', {
+    p_producto_id: productoId,
+    p_cantidad: cantidad,
+  })
+  if (error) throw new Error(error.message)
+  const row = Array.isArray(data) ? data[0] : data
+  if (!row) return { costo: null, incompleto: true }
+  return {
+    costo: row.costo != null ? Number(row.costo) : null,
+    incompleto: Boolean(row.incompleto),
+  }
+}
+
 export async function getUnidadesEquivalentesPorProducto(): Promise<Record<string, number>> {
   const supabase = createAdminClient()
   const { data, error } = await supabase
@@ -391,4 +412,45 @@ export async function getVentasCliente(clienteId: string) {
     .order('created_at', { ascending: false })
   if (error) throw new Error(error.message)
   return data ?? []
+}
+
+export interface HydrexCatalogForVenta {
+  productos: HydrexProducto[]
+  preciosMap: Record<string, PrecioRow[]>
+  recetaMap: Record<string, HydrexProductoRecetaLinea[]>
+  stockMap: Record<string, number>
+  componentes: ComponenteCosto[]
+  envioTarifas: { id: string; nombre: string; valor_referencia: number }[]
+  clientes: { id: string; nombre: string }[]
+}
+
+export async function getHydrexCatalogForVenta(): Promise<HydrexCatalogForVenta> {
+  const [productos, componentes, envioTarifas, clientes, recetaMap, stockProductos] =
+    await Promise.all([
+      getProductosConCosto(true),
+      getComponentesCosto(),
+      getEnvioTarifas(),
+      getClientesHydrex(),
+      getProductoReceta(),
+      getStockProductos(),
+    ])
+
+  const preciosMap: Record<string, PrecioRow[]> = {}
+  await Promise.all(
+    productos.map(async (p) => {
+      preciosMap[p.id] = await getPreciosProducto(p.id)
+    })
+  )
+
+  return {
+    productos,
+    preciosMap,
+    recetaMap,
+    stockMap: Object.fromEntries(
+      stockProductos.map((r) => [r.producto_id, r.stock_disponible])
+    ),
+    componentes,
+    envioTarifas,
+    clientes: clientes.map((c) => ({ id: c.id as string, nombre: c.nombre as string })),
+  }
 }

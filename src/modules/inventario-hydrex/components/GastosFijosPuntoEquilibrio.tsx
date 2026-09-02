@@ -6,10 +6,10 @@ import { upsertGastoFijo } from '../actions/mutations'
 import {
   formatCOP,
   mensajePrecioNoDisponible,
-  productoCostoDisponible,
 } from '../lib/motor-calculo'
 import type { ComponenteCosto, HydrexProducto, PrecioRow } from '../lib/tipos'
 import { CANALES } from '../lib/tipos'
+import { useCostoProductoFifo } from '../hooks/useCostoProductoFifo'
 import {
   MODOS_CANAL_EQUILIBRIO,
   calcularGananciaEquilibrio,
@@ -47,6 +47,8 @@ const CALC_STATE_INICIAL: CalculadoraState = {
   incluyeEnvio: false,
   valorEnvio: 0,
   componentesActivos: {},
+  costoProductoTotal: null,
+  costoFifoIncompleto: true,
 }
 
 export function GastosFijosPuntoEquilibrio({
@@ -65,6 +67,12 @@ export function GastosFijosPuntoEquilibrio({
 
   const producto = productos.find((p) => p.id === calcState.productoId)
   const precios = calcState.productoId ? preciosMap[calcState.productoId] ?? [] : []
+  const {
+    costoProductoTotal,
+    incompleto: costoFifoIncompleto,
+    loading: costoFifoLoading,
+    costoDisponible,
+  } = useCostoProductoFifo(calcState.productoId, calcState.cantidad)
 
   const mensajeEquilibrio = useMemo(() => {
     if (!calcState.productoId) {
@@ -84,14 +92,22 @@ export function GastosFijosPuntoEquilibrio({
         texto: avisoPrecio,
       }
     }
-    if (!producto || !productoCostoDisponible(producto)) {
+    if (costoFifoLoading) {
+      return {
+        tipo: 'info' as const,
+        texto: 'Calculando costo FIFO…',
+      }
+    }
+    if (!producto || !costoDisponible || costoProductoTotal == null) {
       return {
         tipo: 'warning' as const,
-        texto: 'El producto no tiene costo conocido; registra compras de insumos primero.',
+        texto:
+          'No hay stock de compras suficiente para calcular el costo FIFO de esta cantidad.',
       }
     }
 
     const gananciaRef = calcularGananciaEquilibrio(
+      costoProductoTotal,
       producto,
       calcState,
       componentes,
@@ -149,7 +165,17 @@ export function GastosFijosPuntoEquilibrio({
       unidades,
       canalesExcluidos,
     }
-  }, [calcState, precios, producto, componentes, modoCanal, totalMensual])
+  }, [
+    calcState,
+    precios,
+    producto,
+    componentes,
+    modoCanal,
+    totalMensual,
+    costoProductoTotal,
+    costoDisponible,
+    costoFifoLoading,
+  ])
 
   async function save(e: React.FormEvent) {
     e.preventDefault()

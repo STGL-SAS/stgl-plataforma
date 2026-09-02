@@ -5,55 +5,26 @@ import {
   getCuentasBancarias,
   getNegocios,
 } from '@/modules/contabilidad/actions/transacciones'
-import {
-  getClientesHydrex,
-  getComponentesCosto,
-  getEnvioTarifas,
-  getPreciosProducto,
-  getProductosConCosto,
-  getProductoReceta,
-  getStockProductos,
-} from '@/modules/inventario-hydrex/lib/queries'
-import { stockProductosToMap } from '@/modules/inventario-hydrex/lib/stock-producto'
+import { getHydrexCatalogForVenta } from '@/modules/inventario-hydrex/lib/queries'
 
 export const dynamic = 'force-dynamic'
 
-async function loadHydrexCatalog() {
-  try {
-    const [productos, componentes, envioTarifas, clientes, recetaMap, stockProductos] =
-      await Promise.all([
-      getProductosConCosto(true),
-      getComponentesCosto(),
-      getEnvioTarifas(),
-      getClientesHydrex(),
-      getProductoReceta(),
-      getStockProductos(),
-    ])
-    const stockMap = stockProductosToMap(stockProductos)
-    const preciosMap: Record<string, Awaited<ReturnType<typeof getPreciosProducto>>> = {}
-    for (const p of productos) {
-      preciosMap[p.id] = await getPreciosProducto(p.id)
-    }
-    return {
-      productos,
-      preciosMap,
-      recetaMap,
-      stockMap,
-      componentes,
-      envioTarifas,
-      clientes: clientes.map((c) => ({ id: c.id as string, nombre: c.nombre as string })),
-    }
-  } catch {
-    return undefined
-  }
-}
-
 export default async function NuevaTransaccionPage() {
-  const [negocios, cuentas, categorias, hydrexCatalog] = await Promise.all([
+  let hydrexCatalog
+  let hydrexCatalogError: string | undefined
+
+  try {
+    hydrexCatalog = await getHydrexCatalogForVenta()
+  } catch (err) {
+    hydrexCatalogError =
+      err instanceof Error ? err.message : 'No se pudo cargar el catálogo HYDREX'
+    console.error('[nueva transacción] catálogo HYDREX:', err)
+  }
+
+  const [negocios, cuentas, categorias] = await Promise.all([
     getNegocios(),
     getCuentasBancarias(),
     getCategoriasSugeridas(),
-    loadHydrexCatalog(),
   ])
 
   return (
@@ -76,6 +47,7 @@ export default async function NuevaTransaccionPage() {
         cuentas={cuentas}
         categoriasSugeridas={categorias}
         hydrexCatalog={hydrexCatalog}
+        hydrexCatalogError={hydrexCatalogError}
       />
     </div>
   )

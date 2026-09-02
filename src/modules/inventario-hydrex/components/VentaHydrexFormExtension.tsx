@@ -1,9 +1,9 @@
 'use client'
 
-import { useCallback, useMemo, useState } from 'react'
-import { calcularVenta, productoCostoDisponible } from '../lib/motor-calculo'
+import { useCallback, useState } from 'react'
+import { calcularVenta } from '../lib/motor-calculo'
 import type { ComponenteCosto, HydrexProducto, HydrexProductoRecetaLinea, PrecioRow } from '../lib/tipos'
-import { CalculadoraVenta, type CalculadoraState } from './CalculadoraVenta'
+import { CalculadoraVenta, useCalculadoraResultado, type CalculadoraState } from './CalculadoraVenta'
 
 export interface VentaHydrexPayload {
   producto_id: string
@@ -43,31 +43,28 @@ export function VentaHydrexFormExtension({
   const [clienteId, setClienteId] = useState('')
   const [calcState, setCalcState] = useState<CalculadoraState | null>(null)
 
-  const resultado = useMemo(() => {
-    if (!calcState?.productoId) return null
-    const producto = productos.find((p) => p.id === calcState.productoId)
-    if (!producto || !productoCostoDisponible(producto)) return null
-    const componentesCanal = componentes.filter(
-      (c) => !c.canales_aplica?.length || c.canales_aplica.includes(calcState.canal)
-    )
-    return calcularVenta({
-      costoProductoUnitario: producto.costo_por_unidad,
-      precioVentaUnitario: calcState.precioUnitario,
-      cantidad: calcState.cantidad,
-      canal: calcState.canal,
-      componentesDisponibles: componentesCanal,
-      componentesActivos: calcState.componentesActivos,
-      incluyeEnvio: calcState.incluyeEnvio,
-      valorEnvio: calcState.valorEnvio,
-      unidadesEquivalentes: producto.unidades_equivalentes ?? 1,
-    })
-  }, [calcState, productos, componentes])
+  const resultado = useCalculadoraResultado(
+    productos,
+    calcState ?? {
+      canal: 'web',
+      productoId: '',
+      cantidad: 1,
+      tipoPrecio: 'individual',
+      precioUnitario: 0,
+      incluyeEnvio: false,
+      valorEnvio: 0,
+      componentesActivos: {},
+      costoProductoTotal: null,
+      costoFifoIncompleto: true,
+    },
+    componentes
+  )
 
   const notifyParent = useCallback(
     (state: CalculadoraState) => {
       setCalcState(state)
       const producto = productos.find((p) => p.id === state.productoId)
-      if (!producto || !state.productoId) {
+      if (!producto || !state.productoId || state.costoFifoIncompleto || state.costoProductoTotal == null) {
         onVentaChange(null)
         return
       }
@@ -75,7 +72,7 @@ export function VentaHydrexFormExtension({
         (c) => !c.canales_aplica?.length || c.canales_aplica.includes(state.canal)
       )
       const venta_calculo = calcularVenta({
-        costoProductoUnitario: producto.costo_por_unidad,
+        costoProductoTotal: state.costoProductoTotal,
         precioVentaUnitario: state.precioUnitario,
         cantidad: state.cantidad,
         canal: state.canal,
@@ -102,10 +99,9 @@ export function VentaHydrexFormExtension({
     [productos, componentes, clienteId, onVentaChange]
   )
 
-  const productoSel = calcState?.productoId
-    ? productos.find((p) => p.id === calcState.productoId)
-    : undefined
-  const productoSinCosto = Boolean(productoSel && !productoCostoDisponible(productoSel))
+  const productoSinCosto = Boolean(
+    calcState?.productoId && (calcState.costoFifoIncompleto || calcState.costoProductoTotal == null)
+  )
 
   return (
     <div className="mt-6 space-y-4 rounded-lg border border-blue-200 bg-blue-50/40 p-4">
@@ -141,7 +137,7 @@ export function VentaHydrexFormExtension({
 
       {productoSinCosto && (
         <p className="text-sm text-amber-800">
-          No se puede guardar esta venta hasta que el producto tenga costo conocido (registrar compras de insumos).
+          No se puede guardar esta venta hasta que haya stock de compras suficiente para el costo FIFO de esta cantidad.
         </p>
       )}
 

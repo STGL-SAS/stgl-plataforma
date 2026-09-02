@@ -77,12 +77,12 @@ function calificar(margenPct: number, gananciaTotal: number): Calificacion {
 
 /** Función pura — sin Supabase. Usada por calculadora y registro de venta. */
 export function calcularVenta(input: CalculoVentaInput): CalculoVentaResultado {
-  if (!tieneCostoDisponible(input.costoProductoUnitario)) {
+  if (!tieneCostoDisponible(input.costoProductoTotal)) {
     return COSTO_NO_DISPONIBLE
   }
 
   const {
-    costoProductoUnitario,
+    costoProductoTotal,
     precioVentaUnitario,
     cantidad,
     canal,
@@ -94,7 +94,6 @@ export function calcularVenta(input: CalculoVentaInput): CalculoVentaResultado {
   } = input
 
   const unidadesLote = unidadesEquivalentes > 0 ? unidadesEquivalentes : 1
-  const costoProductoTotal = costoProductoUnitario * cantidad
   const ingresoTotal = precioVentaUnitario * cantidad
 
   const componentesAplicados: ComponenteAplicado[] = componentesDisponibles.map(

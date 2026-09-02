@@ -18,7 +18,8 @@ export interface ComponenteCosto {
 }
 
 export interface CalculoVentaInput {
-  costoProductoUnitario: number | null | undefined
+  /** Costo total del producto para la cantidad exacta evaluada (FIFO, ya no se multiplica por cantidad). */
+  costoProductoTotal: number | null | undefined
   precioVentaUnitario: number
   cantidad: number
   canal: Canal

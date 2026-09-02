@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { calcularVenta, formatCOP, formatCostoDisplay, mensajePrecioNoDisponible, productoCostoDisponible, resolverPrecioVenta } from '../lib/motor-calculo'
+import { calcularVenta, formatCOP, formatCostoDisplay, mensajePrecioNoDisponible, resolverPrecioVenta } from '../lib/motor-calculo'
 import type {
   Canal,
   ComponenteCosto,
@@ -14,7 +14,7 @@ import { formatRecetaLinea } from '../lib/format-receta'
 import { mensajeStockInsuficiente } from '../lib/stock-producto'
 import { CANALES } from '../lib/tipos'
 import { ajustarTipoPrecio, tiposPrecioOpcionesParaProducto } from '../lib/validate-tipo-precio'
-import { calcularVentaParaCanal } from '../lib/punto-equilibrio'
+import { useCostoProductoFifo } from '../hooks/useCostoProductoFifo'
 import { CalculoVentaPanel } from './CalculoVentaPanel'
 import { CurrencyInput } from './CurrencyInput'
 import { NumberInput } from '@/components/NumberInput'
@@ -34,6 +34,8 @@ export interface CalculadoraState {
   incluyeEnvio: boolean
   valorEnvio: number
   componentesActivos: Record<string, boolean>
+  costoProductoTotal: number | null
+  costoFifoIncompleto: boolean
 }
 
 interface Props {
@@ -103,6 +105,12 @@ export function CalculadoraVenta({
     [componentes, canal]
   )
 
+  const {
+    costoProductoTotal,
+    incompleto: costoFifoIncompleto,
+    loading: costoFifoLoading,
+  } = useCostoProductoFifo(productoId, cantidadEfectiva)
+
   useEffect(() => {
     if (precioManual || !precios.length) return
     const p = resolverPrecioVenta(precios, tipoPrecio, cantidadEfectiva)
@@ -116,9 +124,9 @@ export function CalculadoraVenta({
   }, [producto, tipoPrecio])
 
   const resultado = useMemo(() => {
-    if (!producto) return null
+    if (!producto || costoFifoIncompleto || costoProductoTotal == null) return null
     return calcularVenta({
-      costoProductoUnitario: producto.costo_por_unidad,
+      costoProductoTotal,
       precioVentaUnitario: precioUnitario,
       cantidad: cantidadEfectiva,
       canal,
@@ -130,6 +138,8 @@ export function CalculadoraVenta({
     })
   }, [
     producto,
+    costoProductoTotal,
+    costoFifoIncompleto,
     precioUnitario,
     cantidadEfectiva,
     canal,
@@ -149,6 +159,8 @@ export function CalculadoraVenta({
       incluyeEnvio,
       valorEnvio,
       componentesActivos,
+      costoProductoTotal,
+      costoFifoIncompleto,
     })
   }, [
     canal,
@@ -159,6 +171,8 @@ export function CalculadoraVenta({
     incluyeEnvio,
     valorEnvio,
     componentesActivos,
+    costoProductoTotal,
+    costoFifoIncompleto,
     onStateChange,
   ])
 
@@ -360,6 +374,16 @@ export function CalculadoraVenta({
       </div>
       )}
 
+      {productoId && costoFifoLoading && (
+        <p className="text-sm text-zinc-500">Calculando costo FIFO…</p>
+      )}
+
+      {productoId && !costoFifoLoading && costoFifoIncompleto && (
+        <div className="rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          No hay stock de compras suficiente para calcular el costo FIFO de esta cantidad.
+        </div>
+      )}
+
       {!soloParametros && <CalculoVentaPanel resultado={resultado} />}
     </div>
   )
@@ -372,7 +396,20 @@ export function useCalculadoraResultado(
 ) {
   return useMemo(() => {
     const producto = productos.find((p) => p.id === state.productoId)
-    if (!producto || !productoCostoDisponible(producto)) return null
-    return calcularVentaParaCanal(producto, state, componentes, state.canal)
+    if (!producto || state.costoFifoIncompleto || state.costoProductoTotal == null) return null
+    const componentesCanal = componentes.filter(
+      (c) => !c.canales_aplica?.length || c.canales_aplica.includes(state.canal)
+    )
+    return calcularVenta({
+      costoProductoTotal: state.costoProductoTotal,
+      precioVentaUnitario: state.precioUnitario,
+      cantidad: state.cantidad,
+      canal: state.canal,
+      componentesDisponibles: componentesCanal,
+      componentesActivos: state.componentesActivos,
+      incluyeEnvio: state.incluyeEnvio,
+      valorEnvio: state.valorEnvio,
+      unidadesEquivalentes: producto.unidades_equivalentes ?? 1,
+    })
   }, [productos, state, componentes])
 }
