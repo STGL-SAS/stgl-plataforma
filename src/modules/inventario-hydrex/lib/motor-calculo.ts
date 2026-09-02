@@ -136,6 +136,29 @@ export function calcularVenta(input: CalculoVentaInput): CalculoVentaResultado {
   }
 }
 
+export function tienePrecioParaTipo(precios: PrecioRow[], tipoPrecio: TipoPrecio): boolean {
+  return precios.some((p) => p.tipo_precio === tipoPrecio)
+}
+
+export function filasPrecioDistribuidor(precios: PrecioRow[]): PrecioRow[] {
+  return precios
+    .filter((p) => p.tipo_precio === 'distribuidor')
+    .sort((a, b) => a.cantidad_min - b.cantidad_min)
+}
+
+export function filaPrecioDistribuidor(
+  precios: PrecioRow[],
+  cantidad: number
+): PrecioRow | null {
+  return (
+    filasPrecioDistribuidor(precios).find((p) => {
+      const enMin = cantidad >= p.cantidad_min
+      const enMax = p.cantidad_max == null || cantidad <= p.cantidad_max
+      return enMin && enMax
+    }) ?? null
+  )
+}
+
 /** Resuelve precio unitario desde filas de hydrex_precios según tipo y cantidad. */
 export function resolverPrecioVenta(
   precios: PrecioRow[],
@@ -167,12 +190,31 @@ export function resolverPrecioVenta(
     return precio
   }
 
-  const fila = filas.find((p) => {
-    const enMin = cantidad >= p.cantidad_min
-    const enMax = p.cantidad_max == null || cantidad <= p.cantidad_max
-    return enMin && enMax
-  })
-  return fila?.precio_unitario ?? filas[filas.length - 1]?.precio_unitario ?? 0
+  return filaPrecioDistribuidor(precios, cantidad)?.precio_unitario ?? 0
+}
+
+/** Mensaje cuando no hay precio válido para tipo/cantidad; null si el precio sí aplica. */
+export function mensajePrecioNoDisponible(
+  precios: PrecioRow[],
+  tipoPrecio: TipoPrecio,
+  cantidad: number
+): string | null {
+  if (resolverPrecioVenta(precios, tipoPrecio, cantidad) > 0) return null
+
+  if (!tienePrecioParaTipo(precios, tipoPrecio)) {
+    return 'Este producto no tiene precio definido para el tipo seleccionado.'
+  }
+
+  if (tipoPrecio === 'distribuidor') {
+    const filas = filasPrecioDistribuidor(precios)
+    const menorMin = filas[0]?.cantidad_min
+    if (menorMin != null && cantidad < menorMin) {
+      return `No hay precio distribuidor para esa cantidad — el tramo disponible empieza en ${menorMin} unidades`
+    }
+    return 'No hay precio distribuidor para esa cantidad.'
+  }
+
+  return 'Este producto no tiene precio definido para el tipo seleccionado.'
 }
 
 export function formatCOP(n: number): string {

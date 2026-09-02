@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { calcularVenta, formatCOP, formatCostoDisplay, productoCostoDisponible, resolverPrecioVenta } from '../lib/motor-calculo'
+import { calcularVenta, formatCOP, formatCostoDisplay, mensajePrecioNoDisponible, productoCostoDisponible, resolverPrecioVenta } from '../lib/motor-calculo'
 import type {
   Canal,
   ComponenteCosto,
@@ -13,6 +13,8 @@ import type {
 import { formatRecetaLinea } from '../lib/format-receta'
 import { mensajeStockInsuficiente } from '../lib/stock-producto'
 import { CANALES } from '../lib/tipos'
+import { ajustarTipoPrecio, tiposPrecioOpcionesParaProducto } from '../lib/validate-tipo-precio'
+import { calcularVentaParaCanal } from '../lib/punto-equilibrio'
 import { CalculoVentaPanel } from './CalculoVentaPanel'
 import { CurrencyInput } from './CurrencyInput'
 import { NumberInput } from '@/components/NumberInput'
@@ -40,11 +42,17 @@ interface Props {
   recetaMap?: Record<string, HydrexProductoRecetaLinea[]>
   stockMap?: Record<string, number>
   componentes: ComponenteCosto[]
-  envioTarifas: EnvioTarifa[]
+  envioTarifas?: EnvioTarifa[]
   /** Modo controlado opcional para compartir estado con form de contabilidad */
   state?: Partial<CalculadoraState>
   onStateChange?: (state: CalculadoraState) => void
   hideTitle?: boolean
+  /** Solo selectores de venta (sin componentes, envío ni panel de resultado) */
+  variant?: 'full' | 'parametros'
+  /** Oculta el selector de canal (p. ej. modo peor caso / promedio en gastos fijos) */
+  ocultarCanal?: boolean
+  /** Cantidad visible solo para tipo distribuidor; individual/caja usan 1 internamente */
+  cantidadSoloDistribuidor?: boolean
 }
 
 export function CalculadoraVenta({
@@ -53,11 +61,15 @@ export function CalculadoraVenta({
   recetaMap = {},
   stockMap = {},
   componentes,
-  envioTarifas,
+  envioTarifas = [],
   state: externalState,
   onStateChange,
   hideTitle,
+  variant = 'full',
+  ocultarCanal = false,
+  cantidadSoloDistribuidor = false,
 }: Props) {
+  const soloParametros = variant === 'parametros'
   const [canal, setCanal] = useState<Canal>(externalState?.canal ?? 'web')
   const [productoId, setProductoId] = useState(externalState?.productoId ?? '')
   const [cantidad, setCantidad] = useState(externalState?.cantidad ?? 1)
@@ -74,7 +86,15 @@ export function CalculadoraVenta({
 
   const producto = productos.find((p) => p.id === productoId)
   const precios = productoId ? preciosMap[productoId] ?? [] : []
+  const tiposPrecioOpciones = tiposPrecioOpcionesParaProducto(producto?.tipo_producto)
+  const cantidadEfectiva =
+    cantidadSoloDistribuidor && tipoPrecio !== 'distribuidor' ? 1 : cantidad
+  const mostrarCantidad = !cantidadSoloDistribuidor || tipoPrecio === 'distribuidor'
   const avisoStock = mensajeStockInsuficiente(stockMap, productoId, cantidad)
+  const avisoPrecio =
+    productoId && !precioManual
+      ? mensajePrecioNoDisponible(precios, tipoPrecio, cantidadEfectiva)
+      : null
   const componentesCanal = useMemo(
     () =>
       componentes.filter(
@@ -85,14 +105,14 @@ export function CalculadoraVenta({
 
   useEffect(() => {
     if (precioManual || !precios.length) return
-    const p = resolverPrecioVenta(precios, tipoPrecio, cantidad)
+    const p = resolverPrecioVenta(precios, tipoPrecio, cantidadEfectiva)
     setPrecioUnitario(p)
-  }, [productoId, tipoPrecio, cantidad, precios, precioManual])
+  }, [productoId, tipoPrecio, cantidadEfectiva, precios, precioManual])
 
   useEffect(() => {
-    if (producto?.tipo_producto === 'caja' && tipoPrecio === 'individual') {
-      setTipoPrecio('caja')
-    }
+    if (!producto) return
+    const ajustado = ajustarTipoPrecio(producto.tipo_producto, tipoPrecio)
+    if (ajustado !== tipoPrecio) setTipoPrecio(ajustado)
   }, [producto, tipoPrecio])
 
   const resultado = useMemo(() => {
@@ -100,7 +120,7 @@ export function CalculadoraVenta({
     return calcularVenta({
       costoProductoUnitario: producto.costo_por_unidad,
       precioVentaUnitario: precioUnitario,
-      cantidad,
+      cantidad: cantidadEfectiva,
       canal,
       componentesDisponibles: componentesCanal,
       componentesActivos,
@@ -111,7 +131,7 @@ export function CalculadoraVenta({
   }, [
     producto,
     precioUnitario,
-    cantidad,
+    cantidadEfectiva,
     canal,
     componentesCanal,
     componentesActivos,
@@ -123,7 +143,7 @@ export function CalculadoraVenta({
     onStateChange?.({
       canal,
       productoId,
-      cantidad,
+      cantidad: cantidadEfectiva,
       tipoPrecio,
       precioUnitario,
       incluyeEnvio,
@@ -133,7 +153,7 @@ export function CalculadoraVenta({
   }, [
     canal,
     productoId,
-    cantidad,
+    cantidadEfectiva,
     tipoPrecio,
     precioUnitario,
     incluyeEnvio,
@@ -155,27 +175,32 @@ export function CalculadoraVenta({
       )}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="font-medium">Canal</span>
-          <select
-            className="rounded-md border border-zinc-300 px-3 py-2"
-            value={canal}
-            onChange={(e) => setCanal(e.target.value as Canal)}
-          >
-            {CANALES.map((c) => (
-              <option key={c.value} value={c.value}>{c.label}</option>
-            ))}
-          </select>
-        </label>
+        {!ocultarCanal && (
+          <label className="flex flex-col gap-1 text-sm">
+            <span className="font-medium">Canal</span>
+            <select
+              className="rounded-md border border-zinc-300 px-3 py-2"
+              value={canal}
+              onChange={(e) => setCanal(e.target.value as Canal)}
+            >
+              {CANALES.map((c) => (
+                <option key={c.value} value={c.value}>{c.label}</option>
+              ))}
+            </select>
+          </label>
+        )}
 
-        <label className="flex flex-col gap-1 text-sm">
+        <label className={`flex flex-col gap-1 text-sm ${ocultarCanal ? 'sm:col-span-2 lg:col-span-3' : ''}`}>
           <span className="font-medium">Producto</span>
           <select
             className="rounded-md border border-zinc-300 px-3 py-2"
             value={productoId}
             onChange={(e) => {
-              setProductoId(e.target.value)
+              const newId = e.target.value
+              setProductoId(newId)
               setPrecioManual(false)
+              const p = productos.find((x) => x.id === newId)
+              if (p) setTipoPrecio((prev) => ajustarTipoPrecio(p.tipo_producto, prev))
             }}
           >
             <option value="">Seleccionar…</option>
@@ -188,13 +213,19 @@ export function CalculadoraVenta({
         </label>
       </div>
 
-      {avisoStock && (
+      {!soloParametros && avisoStock && (
         <div className="rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
           {avisoStock}
         </div>
       )}
 
-      {productoId && (recetaMap[productoId]?.length ?? 0) > 0 && (
+      {avisoPrecio && (
+        <div className="rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          {avisoPrecio}
+        </div>
+      )}
+
+      {!soloParametros && productoId && (recetaMap[productoId]?.length ?? 0) > 0 && (
         <div className="rounded-md border border-zinc-200 bg-zinc-50 px-4 py-3">
           <p className="mb-2 text-sm font-medium text-zinc-800">Receta por unidad vendida</p>
           <ul className="text-sm text-zinc-600 space-y-1">
@@ -208,16 +239,18 @@ export function CalculadoraVenta({
       )}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <label className="flex flex-col gap-1 text-sm sm:col-span-2 lg:col-span-1">
-          <span className="font-medium">Cantidad</span>
-          <NumberInput
-            integer
-            min={1}
-            emptyWhenZero={false}
-            value={cantidad}
-            onChange={(v) => setCantidad(v ?? 1)}
-          />
-        </label>
+        {mostrarCantidad && (
+          <label className="flex flex-col gap-1 text-sm sm:col-span-2 lg:col-span-1">
+            <span className="font-medium">Cantidad</span>
+            <NumberInput
+              integer
+              min={1}
+              emptyWhenZero={false}
+              value={cantidad}
+              onChange={(v) => setCantidad(v ?? 1)}
+            />
+          </label>
+        )}
 
         <label className="flex flex-col gap-1 text-sm">
           <span className="font-medium">Tipo de precio</span>
@@ -229,24 +262,33 @@ export function CalculadoraVenta({
               setPrecioManual(false)
             }}
           >
-            <option value="individual">Individual</option>
-            <option value="caja">Caja</option>
-            <option value="distribuidor">Distribuidor</option>
+            {tiposPrecioOpciones.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
           </select>
         </label>
 
         <label className="flex flex-col gap-1 text-sm">
           <span className="font-medium">Precio unitario</span>
-          <CurrencyInput
-            value={precioUnitario || null}
-            onChange={(v) => {
-              setPrecioManual(true)
-              setPrecioUnitario(v ?? 0)
-            }}
-          />
+          {soloParametros ? (
+            <span className="rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2">
+              {precioUnitario > 0 ? formatCOP(precioUnitario) : '—'}
+            </span>
+          ) : (
+            <CurrencyInput
+              value={precioUnitario || null}
+              onChange={(v) => {
+                setPrecioManual(true)
+                setPrecioUnitario(v ?? 0)
+              }}
+            />
+          )}
         </label>
       </div>
 
+      {!soloParametros && (
       <div className="rounded-lg border border-zinc-200 p-4 space-y-3">
         <p className="text-sm font-medium">Componentes de costo</p>
         {componentesCanal.length === 0 ? (
@@ -272,7 +314,9 @@ export function CalculadoraVenta({
           </ul>
         )}
       </div>
+      )}
 
+      {!soloParametros && (
       <div className="rounded-lg border border-zinc-200 p-4 space-y-3">
         <div className="flex items-center gap-2">
           <input
@@ -314,8 +358,9 @@ export function CalculadoraVenta({
           </>
         )}
       </div>
+      )}
 
-      <CalculoVentaPanel resultado={resultado} />
+      {!soloParametros && <CalculoVentaPanel resultado={resultado} />}
     </div>
   )
 }
@@ -328,19 +373,6 @@ export function useCalculadoraResultado(
   return useMemo(() => {
     const producto = productos.find((p) => p.id === state.productoId)
     if (!producto || !productoCostoDisponible(producto)) return null
-    const componentesCanal = componentes.filter(
-      (c) => !c.canales_aplica?.length || c.canales_aplica.includes(state.canal)
-    )
-    return calcularVenta({
-      costoProductoUnitario: producto.costo_por_unidad,
-      precioVentaUnitario: state.precioUnitario,
-      cantidad: state.cantidad,
-      canal: state.canal,
-      componentesDisponibles: componentesCanal,
-      componentesActivos: state.componentesActivos,
-      incluyeEnvio: state.incluyeEnvio,
-      valorEnvio: state.valorEnvio,
-      unidadesEquivalentes: producto.unidades_equivalentes ?? 1,
-    })
+    return calcularVentaParaCanal(producto, state, componentes, state.canal)
   }, [productos, state, componentes])
 }

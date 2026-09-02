@@ -130,12 +130,21 @@ export type UpsertProductoRecetaLinea = {
   cantidad: number
 }
 
+export type UpsertProductoPrecioLinea = {
+  tipo_precio: string
+  cantidad_min: number
+  cantidad_max: number | null
+  precio_unitario: number
+  descuento_pct_ui?: number
+}
+
 export type UpsertProductoInput = {
   id?: string
   nombre: string
   tipo_producto: 'individual' | 'caja'
   activo: boolean
   receta: UpsertProductoRecetaLinea[]
+  precios?: UpsertProductoPrecioLinea[]
 }
 
 export async function upsertProducto(input: UpsertProductoInput) {
@@ -229,6 +238,58 @@ export async function upsertProducto(input: UpsertProductoInput) {
     }))
   )
   if (insertError) throwFriendlyDbError(insertError)
+
+  const preciosRaw = input.precios ?? []
+  for (const p of preciosRaw) {
+    const tipoPrecio = String(p.tipo_precio ?? '')
+    validarTipoPrecioParaProducto(tipo, tipoPrecio)
+    const precioUnitario = Number(p.precio_unitario ?? 0)
+    if (!Number.isFinite(precioUnitario) || precioUnitario <= 0) {
+      throw new Error(`El precio "${tipoPrecio}" debe ser mayor a 0.`)
+    }
+    if (tipoPrecio === 'distribuidor') {
+      const min = Math.trunc(Number(p.cantidad_min ?? 1))
+      if (!Number.isFinite(min) || min < 1) {
+        throw new Error('Cada tramo distribuidor debe tener cantidad mínima ≥ 1.')
+      }
+      if (p.cantidad_max != null) {
+        const max = Math.trunc(Number(p.cantidad_max))
+        if (!Number.isFinite(max) || max < min) {
+          throw new Error('La cantidad máxima del tramo distribuidor debe ser ≥ la mínima.')
+        }
+      }
+    }
+  }
+
+  const { error: deletePreciosError } = await supabase
+    .from('hydrex_precios')
+    .delete()
+    .eq('producto_id', productoId)
+  if (deletePreciosError) throwFriendlyDbError(deletePreciosError)
+
+  if (preciosRaw.length > 0) {
+    const precioRows = preciosRaw.map((p) => {
+      const tipoPrecio = String(p.tipo_precio)
+      const esDistribuidor = tipoPrecio === 'distribuidor'
+      const esCaja = tipoPrecio === 'caja'
+      const descuento_pct = esCaja
+        ? descuentoPctUiToFraction(p.descuento_pct_ui ?? 0)
+        : 0
+      return {
+        producto_id: productoId,
+        tipo_precio: tipoPrecio,
+        cantidad_min: esDistribuidor ? Math.trunc(Number(p.cantidad_min ?? 1)) : 1,
+        cantidad_max:
+          esDistribuidor && p.cantidad_max != null
+            ? Math.trunc(Number(p.cantidad_max))
+            : null,
+        precio_unitario: Number(p.precio_unitario),
+        descuento_pct,
+      }
+    })
+    const { error: insertPreciosError } = await supabase.from('hydrex_precios').insert(precioRows)
+    if (insertPreciosError) throwFriendlyDbError(insertPreciosError)
+  }
 }
 
 export async function upsertPrecio(input: Record<string, unknown>) {

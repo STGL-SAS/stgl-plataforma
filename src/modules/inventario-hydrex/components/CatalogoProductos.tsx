@@ -1,21 +1,20 @@
 'use client'
 
 import { useState } from 'react'
-import { deletePrecio, deleteProducto } from '../actions/deletes'
-import { upsertPrecio, upsertProducto } from '../actions/mutations'
+import { deleteProducto } from '../actions/deletes'
+import { upsertProducto } from '../actions/mutations'
 import type { HydrexInsumo, HydrexProducto, HydrexProductoRecetaLinea, PrecioRow } from '../lib/tipos'
-import { formatCostoDisplay, formatCOP } from '../lib/motor-calculo'
+import { formatCostoDisplay } from '../lib/motor-calculo'
+import { formatPreciosCompacto } from '../lib/format-precios'
 import { formatRecetaResumen } from '../lib/format-receta'
 import { recetaInicialParaTipoProducto } from '../lib/tipo-producto'
-import {
-  TIPO_PRECIO_OPTIONS,
-  tipoPrecioDefault,
-  tiposPrecioPermitidos,
-} from '../lib/validate-tipo-precio'
-import { descuentoFractionToPctUi } from '../lib/descuento-pct'
+import { ajustarTipoPrecio } from '../lib/validate-tipo-precio'
 import { ConfirmDialog } from './ConfirmDialog'
-import { CurrencyInput } from './CurrencyInput'
-import { NumberInput } from '@/components/NumberInput'
+import {
+  ProductoPreciosEditor,
+  precioRowToDraft,
+  type PrecioLineaDraft,
+} from './ProductoPreciosEditor'
 import {
   ProductoRecetaEditor,
   createEmptyRecetaLineas,
@@ -30,6 +29,7 @@ interface ProductoEditState {
   tipo_producto: 'individual' | 'caja'
   activo: boolean
   receta: RecetaLineaDraft[]
+  precios: PrecioLineaDraft[]
 }
 
 interface Props {
@@ -46,6 +46,7 @@ interface Props {
 function toEditState(
   producto: HydrexProducto | null,
   recetaMap: Record<string, HydrexProductoRecetaLinea[]>,
+  preciosMap: Record<string, PrecioRow[]>,
   insumos: HydrexInsumo[]
 ): ProductoEditState {
   if (!producto) {
@@ -54,9 +55,11 @@ function toEditState(
       tipo_producto: 'individual',
       activo: true,
       receta: createEmptyRecetaLineas(insumos),
+      precios: [],
     }
   }
   const lineas = recetaMap[producto.id] ?? []
+  const precios = preciosMap[producto.id] ?? []
   return {
     id: producto.id,
     nombre: producto.nombre,
@@ -74,6 +77,7 @@ function toEditState(
             insumos,
             createEmptyRecetaLineas(insumos)
           ),
+    precios: precios.map(precioRowToDraft),
   }
 }
 
@@ -88,24 +92,12 @@ export function CatalogoProductos({
   onRefresh,
 }: Props) {
   const [editing, setEditing] = useState<ProductoEditState | null>(null)
-  const [precioEdit, setPrecioEdit] = useState<Record<string, unknown> | null>(null)
-  const [confirm, setConfirm] = useState<
-    { type: 'producto' | 'precio'; id: string; nombre: string } | null
-  >(null)
+  const [confirm, setConfirm] = useState<{ id: string; nombre: string } | null>(null)
   const [confirming, setConfirming] = useState(false)
   const [productoError, setProductoError] = useState<string | null>(null)
 
   const insumoById = new Map(insumos.map((i) => [i.id, i]))
   const productoById = new Map(productos.map((p) => [p.id, p]))
-
-  const precioProducto = precioEdit
-    ? productos.find((p) => p.id === precioEdit.producto_id)
-    : undefined
-  const tiposPrecioOpciones = TIPO_PRECIO_OPTIONS.filter((opt) =>
-    precioProducto
-      ? tiposPrecioPermitidos(precioProducto.tipo_producto).includes(opt.value)
-      : true
-  )
 
   async function saveProducto(e: React.FormEvent) {
     e.preventDefault()
@@ -120,27 +112,11 @@ export function CatalogoProductos({
     }
   }
 
-  async function savePrecio(e: React.FormEvent) {
-    e.preventDefault()
-    if (!precioEdit) return
-    await upsertPrecio({
-      ...precioEdit,
-      cantidad_min: Math.trunc(Number(precioEdit.cantidad_min)) || 1,
-      precio_unitario: precioEdit.precio_unitario ?? 0,
-    })
-    setPrecioEdit(null)
-    onRefresh()
-  }
-
   async function handleDelete() {
     if (!confirm) return
     setConfirming(true)
     try {
-      if (confirm.type === 'producto') {
-        await deleteProducto(confirm.id, confirm.nombre)
-      } else {
-        await deletePrecio(confirm.id)
-      }
+      await deleteProducto(confirm.id, confirm.nombre)
       setConfirm(null)
       onRefresh()
     } finally {
@@ -152,7 +128,7 @@ export function CatalogoProductos({
     <div className="space-y-6">
       <button
         type="button"
-        onClick={() => setEditing(toEditState(null, recetaMap, insumos))}
+        onClick={() => setEditing(toEditState(null, recetaMap, preciosMap, insumos))}
         className="rounded-md bg-zinc-900 px-4 py-2 text-sm text-white"
       >
         + Nuevo producto
@@ -179,6 +155,16 @@ export function CatalogoProductos({
                   ...editing,
                   tipo_producto: tipo,
                   receta: recetaInicialParaTipoProducto(tipo, insumos, editing.receta),
+                  precios: editing.precios.map((p) => {
+                    const tipo_precio = ajustarTipoPrecio(tipo, p.tipo_precio)
+                    return {
+                      ...p,
+                      tipo_precio,
+                      cantidad_min: tipo_precio === 'distribuidor' ? p.cantidad_min : 1,
+                      cantidad_max: tipo_precio === 'distribuidor' ? p.cantidad_max : null,
+                      descuento_pct_ui: tipo_precio === 'caja' ? p.descuento_pct_ui : 0,
+                    }
+                  }),
                 })
               }}
               className="rounded-md border px-3 py-2 text-sm"
@@ -202,6 +188,12 @@ export function CatalogoProductos({
             productoIdExcluir={editing.id}
             lineas={editing.receta}
             onChange={(receta) => setEditing({ ...editing, receta })}
+          />
+
+          <ProductoPreciosEditor
+            tipoProducto={editing.tipo_producto}
+            lineas={editing.precios}
+            onChange={(precios) => setEditing({ ...editing, precios })}
           />
 
           {productoError && (
@@ -280,53 +272,13 @@ export function CatalogoProductos({
                     {formatCostoDisplay(costo?.costo_por_unidad)}
                   </td>
                   <td className="px-3 py-2 text-center text-xs">{p.activo ? 'Activo' : 'Inactivo'}</td>
-                  <td className="px-3 py-2">
-                    <ul className="text-xs space-y-0.5">
-                      {precios.map((pr) => (
-                        <li key={pr.id} className="flex items-center justify-between gap-2">
-                          <span>
-                            {pr.tipo_precio}: {formatCOP(pr.precio_unitario)} (min {pr.cantidad_min}
-                            {pr.descuento_pct > 0
-                              ? `, dto. ${descuentoFractionToPctUi(pr.descuento_pct)}%`
-                              : ''}
-                            )
-                          </span>
-                          <button
-                            type="button"
-                            className="text-red-600 hover:text-red-800"
-                            onClick={() =>
-                              setConfirm({
-                                type: 'precio',
-                                id: pr.id,
-                                nombre: `${pr.tipo_precio} — ${formatCOP(pr.precio_unitario)}`,
-                              })
-                            }
-                          >
-                            ×
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                    <button
-                      type="button"
-                      className="text-blue-600 text-xs mt-1"
-                      onClick={() =>
-                        setPrecioEdit({
-                          producto_id: p.id,
-                          tipo_precio: tipoPrecioDefault(p.tipo_producto),
-                          cantidad_min: 1,
-                          precio_unitario: 0,
-                          descuento_pct_ui: 0,
-                        })
-                      }
-                    >
-                      + precio
-                    </button>
+                  <td className="px-3 py-2 text-xs text-zinc-600 max-w-xs">
+                    {formatPreciosCompacto(precios)}
                   </td>
                   <td className="px-3 py-2">
                     <RowActions
-                      onEdit={() => setEditing(toEditState(p, recetaMap, insumos))}
-                      onDelete={() => setConfirm({ type: 'producto', id: p.id, nombre: p.nombre })}
+                      onEdit={() => setEditing(toEditState(p, recetaMap, preciosMap, insumos))}
+                      onDelete={() => setConfirm({ id: p.id, nombre: p.nombre })}
                     />
                   </td>
                 </tr>
@@ -336,78 +288,12 @@ export function CatalogoProductos({
         </table>
       </div>
 
-      {precioEdit && (
-        <form onSubmit={savePrecio} className="rounded-lg border p-4 grid gap-3 sm:grid-cols-3">
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="font-medium">Tipo de precio</span>
-            <select
-              value={String(precioEdit.tipo_precio)}
-              onChange={(e) => setPrecioEdit({ ...precioEdit, tipo_precio: e.target.value })}
-              className="rounded-md border px-3 py-2 text-sm"
-            >
-              {tiposPrecioOpciones.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="font-medium">Cantidad mínima</span>
-            <NumberInput
-              integer
-              min={1}
-              value={precioEdit.cantidad_min != null ? Number(precioEdit.cantidad_min) : null}
-              onChange={(cantidad_min) =>
-                setPrecioEdit({ ...precioEdit, cantidad_min: cantidad_min ?? 0 })
-              }
-              className="text-sm"
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="font-medium">Precio unitario</span>
-            <CurrencyInput
-              value={precioEdit.precio_unitario != null ? Number(precioEdit.precio_unitario) : null}
-              onChange={(precio_unitario) =>
-                setPrecioEdit({ ...precioEdit, precio_unitario: precio_unitario ?? 0 })
-              }
-              className="text-sm"
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="font-medium">Descuento (%)</span>
-            <NumberInput
-              value={precioEdit.descuento_pct_ui != null ? Number(precioEdit.descuento_pct_ui) : null}
-              onChange={(descuento_pct_ui) =>
-                setPrecioEdit({ ...precioEdit, descuento_pct_ui: descuento_pct_ui ?? 0 })
-              }
-              className="text-sm"
-            />
-            <span className="text-xs text-zinc-500">Ej.: 10 = 10% de descuento</span>
-          </label>
-          <div className="flex gap-2 sm:col-span-3">
-            <button type="submit" className="rounded-md bg-blue-600 px-4 py-2 text-sm text-white">
-              Guardar precio
-            </button>
-            <button
-              type="button"
-              onClick={() => setPrecioEdit(null)}
-              className="rounded-md border px-4 py-2 text-sm"
-            >
-              Cancelar
-            </button>
-          </div>
-        </form>
-      )}
-
       <ConfirmDialog
         open={Boolean(confirm)}
-        title={confirm?.type === 'precio' ? 'Eliminar precio' : 'Eliminar producto'}
+        title="Eliminar producto"
         message={
           confirm
-            ? confirm.type === 'producto'
-              ? `¿Seguro que quieres eliminar "${confirm.nombre}"? Si tiene ventas registradas se desactivará para conservar el historial.`
-              : `¿Seguro que quieres eliminar el precio "${confirm.nombre}"? Esta acción no se puede deshacer.`
+            ? `¿Seguro que quieres eliminar "${confirm.nombre}"? Si tiene ventas registradas se desactivará para conservar el historial.`
             : ''
         }
         confirming={confirming}

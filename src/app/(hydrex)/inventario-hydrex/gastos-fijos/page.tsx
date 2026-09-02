@@ -1,5 +1,10 @@
-import { getGastosFijosHydrex, getGastosFijosMensuales, getProductosConCosto, getComponentesCosto } from '@/modules/inventario-hydrex/lib/queries'
-import { calcularVenta, productoCostoDisponible } from '@/modules/inventario-hydrex/lib/motor-calculo'
+import {
+  getComponentesCosto,
+  getGastosFijosHydrex,
+  getGastosFijosMensuales,
+  getPreciosProducto,
+  getProductosConCosto,
+} from '@/modules/inventario-hydrex/lib/queries'
 import { GastosFijosPageClient } from './GastosFijosPageClient'
 
 export const dynamic = 'force-dynamic'
@@ -12,29 +17,18 @@ export default async function GastosFijosPage() {
     getComponentesCosto(),
   ])
 
-  let gananciaPorUnidadRef = 0
-  const ref = productos[0]
-  const costoRef = ref?.costo_por_unidad
-  if (ref && productoCostoDisponible(ref) && costoRef != null) {
-    const r = calcularVenta({
-      costoProductoUnitario: costoRef,
-      precioVentaUnitario: costoRef * 1.5,
-      cantidad: 1,
-      canal: 'web',
-      componentesDisponibles: componentes,
-      componentesActivos: {},
-      incluyeEnvio: false,
-      valorEnvio: 0,
-      unidadesEquivalentes: ref.unidades_equivalentes ?? 1,
-    })
-    gananciaPorUnidadRef = r.gananciaPorUnidad ?? 0
+  const preciosMap: Record<string, Awaited<ReturnType<typeof getPreciosProducto>>> = {}
+  for (const p of productos) {
+    preciosMap[p.id] = await getPreciosProducto(p.id)
   }
 
   return (
     <GastosFijosPageClient
       initialGastos={gastos}
       totalMensual={totalMensual}
-      gananciaPorUnidadRef={gananciaPorUnidadRef}
+      productos={productos}
+      preciosMap={preciosMap}
+      componentes={componentes}
     />
   )
 }

@@ -3,16 +3,21 @@
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { GastosFijosPuntoEquilibrio } from '@/modules/inventario-hydrex/components/GastosFijosPuntoEquilibrio'
+import type { ComponenteCosto, HydrexProducto, PrecioRow } from '@/modules/inventario-hydrex/lib/tipos'
 import { getGastosFijosHydrex, getGastosFijosMensuales } from '@/modules/inventario-hydrex/lib/queries'
 
 export function GastosFijosPageClient({
   initialGastos,
   totalMensual: initialTotal,
-  gananciaPorUnidadRef,
+  productos,
+  preciosMap,
+  componentes,
 }: {
   initialGastos: { id: string; concepto: string; monto: number; periodicidad: string; activo: boolean }[]
   totalMensual: number
-  gananciaPorUnidadRef: number
+  productos: HydrexProducto[]
+  preciosMap: Record<string, PrecioRow[]>
+  componentes: ComponenteCosto[]
 }) {
   const router = useRouter()
   const [gastos, setGastos] = useState(initialGastos)
@@ -29,7 +34,9 @@ export function GastosFijosPageClient({
     <GastosFijosPuntoEquilibrio
       gastos={gastos}
       totalMensual={totalMensual}
-      gananciaPorUnidadRef={gananciaPorUnidadRef}
+      productos={productos}
+      preciosMap={preciosMap}
+      componentes={componentes}
       onRefresh={refresh}
     />
   )
