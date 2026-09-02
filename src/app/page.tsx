@@ -8,30 +8,44 @@ export default function Home() {
         <p className="mt-2 text-zinc-600">
           Gestión interna HYDREX · HARDTECH · HANGARC · VirtualWaiter
         </p>
-        <Link
-          href="/contabilidad"
-          className="mt-8 inline-flex rounded-md bg-zinc-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-zinc-700"
-        >
-          Ir a Contabilidad
-        </Link>
-        <Link
-          href="/documentos"
-          className="mt-3 inline-flex rounded-md border border-zinc-300 px-5 py-2.5 text-sm font-medium text-zinc-800 hover:bg-zinc-50"
-        >
-          Documentos — OneDrive
-        </Link>
-        <Link
-          href="/hardtech/ventas"
-          className="mt-3 inline-flex rounded-md border border-zinc-300 px-5 py-2.5 text-sm font-medium text-zinc-800 hover:bg-zinc-50"
-        >
-          HARDTECH — Ventas y mantenimientos
-        </Link>
-        <Link
-          href="/inventario-hydrex"
-          className="mt-3 inline-flex rounded-md border border-zinc-300 px-5 py-2.5 text-sm font-medium text-zinc-800 hover:bg-zinc-50"
-        >
-          HYDREX — Costeo e inventario
-        </Link>
+        <div className="mt-8 flex flex-col gap-3">
+          <Link
+            href="/contabilidad"
+            className="inline-flex justify-center rounded-md bg-zinc-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-zinc-700"
+          >
+            Ir a Contabilidad
+          </Link>
+          <Link
+            href="/tareas"
+            className="inline-flex justify-center rounded-md border border-zinc-300 px-5 py-2.5 text-sm font-medium text-zinc-800 hover:bg-zinc-50"
+          >
+            Tareas y casos
+          </Link>
+          <Link
+            href="/clientes"
+            className="inline-flex justify-center rounded-md border border-zinc-300 px-5 py-2.5 text-sm font-medium text-zinc-800 hover:bg-zinc-50"
+          >
+            Clientes por negocio
+          </Link>
+          <Link
+            href="/documentos"
+            className="inline-flex justify-center rounded-md border border-zinc-300 px-5 py-2.5 text-sm font-medium text-zinc-800 hover:bg-zinc-50"
+          >
+            Documentos — OneDrive
+          </Link>
+          <Link
+            href="/hardtech/ventas"
+            className="inline-flex justify-center rounded-md border border-zinc-300 px-5 py-2.5 text-sm font-medium text-zinc-800 hover:bg-zinc-50"
+          >
+            HARDTECH — Ventas y mantenimientos
+          </Link>
+          <Link
+            href="/inventario-hydrex"
+            className="inline-flex justify-center rounded-md border border-zinc-300 px-5 py-2.5 text-sm font-medium text-zinc-800 hover:bg-zinc-50"
+          >
+            HYDREX — Costeo e inventario
+          </Link>
+        </div>
       </main>
     </div>
   )

@@ -8,6 +8,7 @@ export async function GET(req: NextRequest) {
     const categoria = searchParams.get('categoria')
     const q = searchParams.get('q')
     const parent = searchParams.get('parent')
+    const scope = searchParams.get('scope')
 
     const supabase = createAdminClient()
     let query = supabase
@@ -17,8 +18,13 @@ export async function GET(req: NextRequest) {
       .order('nombre')
 
     if (q?.trim()) {
-      // Búsqueda global por nombre (no limitada a la carpeta actual)
-      query = query.ilike('nombre', `%${q.trim()}%`)
+      // Búsqueda por nombre o categoría (no limitada a la carpeta actual)
+      const term = q.trim().replace(/[%_,.()]/g, ' ').trim()
+      if (term) {
+        query = query.or(`nombre.ilike.%${term}%,categoria.ilike.%${term}%`)
+      }
+    } else if (scope === 'all') {
+      // Todos los ítems del negocio (p. ej. picker de adjuntos)
     } else if (!parent || parent === 'root') {
       query = query.is('onedrive_parent_id', null)
     } else {
