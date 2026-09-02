@@ -1,52 +1,39 @@
-import Link from 'next/link'
+import { PlatformShell } from '@/modules/core/components/PlatformShell'
+import { DashboardHome } from '@/modules/core/components/DashboardHome'
+import { getDashboardData } from '@/modules/core/lib/dashboard'
 
-export default function Home() {
+export const dynamic = 'force-dynamic'
+
+export default async function HomePage() {
+  let data: Awaited<ReturnType<typeof getDashboardData>> | null = null
+  let error: string | null = null
+
+  try {
+    data = await getDashboardData()
+  } catch (e) {
+    error =
+      e instanceof Error
+        ? e.message
+        : 'No se pudo cargar el dashboard. ¿Aplicaste las migraciones de Fase 8?'
+  }
+
   return (
-    <div className="flex flex-1 flex-col items-center justify-center bg-zinc-50 px-4">
-      <main className="w-full max-w-lg rounded-xl border border-zinc-200 bg-white p-10 text-center shadow-sm">
-        <h1 className="text-2xl font-semibold text-zinc-900">STGL Plataforma</h1>
-        <p className="mt-2 text-zinc-600">
-          Gestión interna HYDREX · HARDTECH · HANGARC · VirtualWaiter
-        </p>
-        <div className="mt-8 flex flex-col gap-3">
-          <Link
-            href="/contabilidad"
-            className="inline-flex justify-center rounded-md bg-zinc-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-zinc-700"
-          >
-            Ir a Contabilidad
-          </Link>
-          <Link
-            href="/tareas"
-            className="inline-flex justify-center rounded-md border border-zinc-300 px-5 py-2.5 text-sm font-medium text-zinc-800 hover:bg-zinc-50"
-          >
-            Tareas y casos
-          </Link>
-          <Link
-            href="/clientes"
-            className="inline-flex justify-center rounded-md border border-zinc-300 px-5 py-2.5 text-sm font-medium text-zinc-800 hover:bg-zinc-50"
-          >
-            Clientes por negocio
-          </Link>
-          <Link
-            href="/documentos"
-            className="inline-flex justify-center rounded-md border border-zinc-300 px-5 py-2.5 text-sm font-medium text-zinc-800 hover:bg-zinc-50"
-          >
-            Documentos — OneDrive
-          </Link>
-          <Link
-            href="/hardtech/ventas"
-            className="inline-flex justify-center rounded-md border border-zinc-300 px-5 py-2.5 text-sm font-medium text-zinc-800 hover:bg-zinc-50"
-          >
-            HARDTECH — Ventas y mantenimientos
-          </Link>
-          <Link
-            href="/inventario-hydrex"
-            className="inline-flex justify-center rounded-md border border-zinc-300 px-5 py-2.5 text-sm font-medium text-zinc-800 hover:bg-zinc-50"
-          >
-            HYDREX — Costeo e inventario
-          </Link>
+    <PlatformShell
+      title="Inicio"
+      subtitle="Dashboard general · HYDREX · HARDTECH · HANGARC · VirtualWaiter"
+    >
+      {error && (
+        <div className="space-y-3">
+          <p className="rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-900">{error}</p>
+          <p className="text-sm text-zinc-600">
+            Mientras tanto puedes entrar a los módulos desde la barra superior. Tras{' '}
+            <code className="text-xs">supabase db push</code> de las migraciones{' '}
+            <code className="text-xs">20260902160000</code> y{' '}
+            <code className="text-xs">20260902170000</code>, este panel mostrará datos reales.
+          </p>
         </div>
-      </main>
-    </div>
+      )}
+      {data && <DashboardHome data={data} />}
+    </PlatformShell>
   )
 }
