@@ -3,6 +3,7 @@
 
 insert into negocios (codigo, nombre, estado) values
   ('HYDREX', 'HYDREX', 'activo'),
+  ('HARDTECH', 'HARDTECH', 'activo'),
   ('HANGARC', 'HANGARC', 'en_desarrollo'),
   ('VIRTUALWAITER', 'VirtualWaiter', 'en_desarrollo'),
   ('STGL', 'STGL (general)', 'activo')
@@ -17,6 +18,8 @@ select n.id, s.id, v.porcentaje
 from (values
   ('HYDREX', 'Tomás Garcés', 50),
   ('HYDREX', 'Samuel López', 50),
+  ('HARDTECH', 'Tomás Garcés', 50),
+  ('HARDTECH', 'Samuel López', 50),
   ('HANGARC', 'Tomás Garcés', 50),
   ('HANGARC', 'Samuel López', 50),
   ('VIRTUALWAITER', 'Tomás Garcés', 43),

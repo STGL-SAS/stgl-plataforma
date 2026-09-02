@@ -1,5 +1,7 @@
 import Link from 'next/link'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getBalanceConsolidado } from '@/modules/contabilidad/actions/balance'
+import { BalanceConsolidadoPanel } from '@/modules/contabilidad/components/BalanceConsolidadoPanel'
 
 async function getResumen() {
   const supabase = createAdminClient()
@@ -26,9 +28,11 @@ async function getResumen() {
 
 export default async function ContabilidadPage() {
   let resumen = { totalTransacciones: 0, boldPendientes: 0, interPendientes: 0 }
+  let balance = null
 
   try {
     resumen = await getResumen()
+    balance = await getBalanceConsolidado()
   } catch {
     // Tablas aún no migradas o sin credenciales
   }
@@ -84,6 +88,8 @@ export default async function ContabilidadPage() {
           </Link>
         ))}
       </div>
+
+      {balance && <BalanceConsolidadoPanel balance={balance} />}
 
       <Link
         href="/contabilidad/transacciones/nueva"

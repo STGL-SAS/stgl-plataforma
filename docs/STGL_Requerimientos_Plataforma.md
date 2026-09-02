@@ -13,6 +13,7 @@
 | HYDREX | Operando (ventas activas) | 50% | 50% |
 | HANGARC | En desarrollo | 50% | 50% |
 | VirtualWaiter | En desarrollo | 43% | 57% |
+| HARDTECH | Operando (ventas y mantenimientos activos) | 50% | 50% |
 | STGL (sociedad, gastos/activos comunes) | Paraguas general | — | — |
 
 STGL se maneja como una "entidad" más dentro del sistema, para todo lo que no es específico de un solo negocio (documentos legales de la sociedad, marca STGL, gastos compartidos entre socios que no son de un proyecto puntual).
@@ -25,6 +26,7 @@ STGL se maneja como una "entidad" más dentro del sistema, para todo lo que no e
 |---|---|
 | Bold | Recibe ventas de HYDREX: Shopify, Mercado Libre, Rappi, distribuidores, ventas en persona |
 | Bancolombia (cuenta general) | Compartida entre HANGARC y VirtualWaiter (y posibles gastos de STGL) |
+| — (sin cuenta propia) | HARDTECH no tiene cuenta bancaria dedicada: hoy el dinero de ventas y compras se mueve a través de las cuentas personales de Tomás y Samuel (débito, transferencias, o la app de cambio de dólares que usan para comprar en el exterior). No es que falte una cuenta por conectar — es que no existe un fondo separado de la empresa (ver sección 4C.8). |
 
 Una cuenta puede alimentar a más de un negocio — cada movimiento se etiqueta con el negocio al que pertenece realmente, no con la cuenta desde la que salió/entró.
 
@@ -152,10 +154,60 @@ A diferencia de los costos variables de HYDREX (sección 4.4-4.5, que dependen d
 
 ## 4A. Módulo de Clientes (por negocio)
 
-Cada negocio (HYDREX, HANGARC, VirtualWaiter) tiene **su propia base de clientes**, separada entre sí — no es una lista mezclada de STGL, porque el tipo de cliente y su relación con cada negocio es distinta (comprador final de HYDREX vs. restaurante cliente de VirtualWaiter vs. usuario/cliente de HANGARC).
+Cada negocio (HYDREX, HANGARC, VirtualWaiter, HARDTECH) tiene **su propia base de clientes**, separada entre sí — no es una lista mezclada de STGL, porque el tipo de cliente y su relación con cada negocio es distinta (comprador final de HYDREX vs. restaurante cliente de VirtualWaiter vs. usuario/cliente de HANGARC vs. cliente de HARDTECH).
 
 - Ficha de cliente: datos de contacto, negocio al que pertenece, y su historial de compras/interacciones dentro de ese negocio.
-- Respeta la misma regla de estructura limpia (sección 11): la base de clientes de HYDREX no se mezcla en código ni en datos con la de HANGARC o VirtualWaiter, aunque las tres vivan en la misma plataforma.
+- Respeta la misma regla de estructura limpia (sección 11): la base de clientes de HYDREX no se mezcla en código ni en datos con la de HANGARC, VirtualWaiter o HARDTECH, aunque las cuatro vivan en la misma plataforma.
+
+---
+
+## 4C. HARDTECH — Ventas de tecnología y mantenimientos
+
+Basado en el Excel de contabilidad que ya manejan (hojas Ventas, Mantenimientos, Gastos, Balance, Pagos entre Socios). HARDTECH **no maneja inventario propio** como HYDREX: es "compra bajo pedido" — se cotiza, se compra solo si hay venta confirmada, y la ganancia sale de la diferencia entre venta y compra. Además tiene una segunda línea de negocio, mantenimientos (servicio técnico), con su propia estructura.
+
+### 4C.1 Flujo de una venta
+1. Se hace una **cotización** al cliente (documento adjunto).
+2. Si aceptan, puede pedirse un **anticipo** (no siempre 50% fijo, a veces monto libre o "pago completo" de una vez).
+3. Solo entonces se **compra el producto** — la compra queda ligada a esa venta específica, no a un inventario general.
+4. Se paga el **envío internacional** si aplica (compras en Amazon US, Apple US, etc. que llegan vía un intermediario de envíos) y el empaque, como gastos extra de esa venta.
+5. Se entrega al cliente y se cobra el **saldo final** (a veces con propina incluida).
+6. El sistema calcula la **ganancia**: precio de venta final − precio de compra − gastos extra − comisión a terceros (si aplica).
+
+### 4C.2 Estructura de pago de la venta
+- Anticipo: monto (no fijo a 50%), fecha, comprobante, nota.
+- Pago final: monto, propina (se suma al valor final), fecha, comprobante.
+- Cada venta debe poder marcarse como pendiente de compra / pendiente de pago final / cerrada, igual que el estado "pendiente/clasificada" de contabilidad general.
+
+### 4C.3 Estructura de la compra
+- Lugar de compra (Amazon, Apple US, Mercado Libre, Falabella, tienda local, etc.), método de pago, y **moneda** (COP o USD).
+- Cuando es en USD: tasa de cambio del día y el saldo que queda disponible en la plataforma de dólares que usan para comprar en el exterior — el sistema debe llevar ese saldo como si fuera una cuenta más (ver 4C.9).
+- Compras que agrupan varios ítems (ej. un accesorio que se pide junto con otra venta) deben poder registrarse relacionadas entre sí sin duplicar el costo de envío.
+
+### 4C.4 Gastos extra de la venta
+- Envío internacional (el que cobra el intermediario que trae el producto a Colombia) y empaque, registrados por venta — no como gasto fijo general, porque varían según cada pedido.
+
+### 4C.5 Comisión a terceros (variable por venta)
+- Algunas ventas pagan un porcentaje a alguien externo (un referido/comisionista puntual, no un socio). El % y el destinatario se registran por venta, no como parámetro fijo del negocio — a diferencia de los componentes de costo de HYDREX (que son reglas reutilizables), aquí es un dato libre por transacción.
+
+### 4C.6 Ganancia
+`Ganancia = Valor final de venta − Precio de compra − Gastos extra`
+`Ganancia neta = Ganancia − Comisión a terceros (si aplica)`
+
+### 4C.7 Módulo de Mantenimientos (servicio técnico)
+Línea separada, con su propia estructura de pago (anticipo / pago final) pero distinta composición de costos:
+- **Honorarios**: a veces el trabajo lo hace un técnico externo subcontratado (no un socio) — se registra a quién y cuánto se le pagó.
+- **Insumos**: piezas o materiales usados en la reparación.
+- **Domicilio**: costo de recogida/entrega a domicilio, si aplica.
+- Ganancia = valor cobrado al cliente − honorarios − insumos − domicilio.
+
+### 4C.8 Fondo de la empresa (dinero sin cuenta propia)
+Hoy el dinero de HARDTECH vive repartido entre las cuentas personales de Tomás y Samuel — no hay una cuenta bancaria ni un "fondo" separado de la empresa. Esto la plataforma lo resuelve así:
+- Cada venta y compra se registra igual (con su ganancia), sin necesidad de que exista una cuenta bancaria real de HARDTECH.
+- Se lleva un módulo de **"Pagos entre Socios"**: cuando un socio paga algo con su propia plata que en realidad es de HARDTECH (o cuando la ganancia de una venta queda en la cuenta personal de uno de los dos), queda registrado quién puso o recibió cada monto — así, en cualquier momento, el sistema puede mostrar cuánto dinero de HARDTECH "debería" estar en manos de cada socio, aunque físicamente no exista una caja separada.
+- Esto es distinto de los aportes de socios (sección 3.1): no es plata que el socio mete como inversión, es plata operativa del negocio que temporalmente pasa por una cuenta personal.
+
+### 4C.9 Multi-moneda
+- Las compras en USD requieren registrar tasa de cambio y dejar ver cuánto queda de saldo en la plataforma de cambio de divisas que usan — el sistema debe tratar ese saldo como una cuenta más, igual que Bold o Bancolombia, para no perder de vista cuánto dinero en dólares está disponible para la próxima compra.
 
 ---
 
@@ -175,6 +227,8 @@ Un "to-do" evolucionado a sistema de seguimiento tipo expediente:
 - La plataforma guarda la **ficha de cada documento** (nombre, categoría, negocio al que pertenece — incluyendo STGL como categoría propia, tipo de documento, fecha) junto con el enlace/ID real del archivo en OneDrive.
 - **La plataforma no es solo un índice de lectura**: desde ahí también se debe poder **subir documentos nuevos y crear carpetas**, y que esto se refleje directamente en la estructura real de OneDrive (vía Microsoft Graph API) — es decir, la plataforma es la puerta de entrada tanto para consultar como para organizar el archivero, sin tener que entrar aparte a OneDrive para eso.
 - Conexión técnica vía Microsoft Graph API (gratuita para este uso), autenticada con la cuenta de OneDrive/correo de STGL (ver sección 10).
+
+**Nota sobre HARDTECH y Google Drive**: los documentos de HARDTECH hoy viven en Google Drive, no en OneDrive. Técnicamente sí es posible integrar Google Drive con la misma lógica (Google también tiene una API gratuita para esto, equivalente a Microsoft Graph). Sin embargo, mantener dos integraciones de almacenamiento (OneDrive + Google Drive) duplica el trabajo y rompe la estructura limpia que se definió en la sección 11 — cada integración es código aparte que hay que mantener. La recomendación es **migrar los documentos de HARDTECH a la misma cuenta de OneDrive de STGL** cuando se llegue a esa fase, y usar una sola integración para los cuatro negocios. Si prefieren mantener HARDTECH en Google Drive, es viable, pero implica una fase de desarrollo adicional dedicada solo a esa segunda integración.
 
 ---
 
@@ -326,10 +380,13 @@ Para ejecutar el desarrollo sin perder el control del avance general, se trabaja
 | **2** | Estructura del repositorio + migraciones iniciales (negocios, socios, cuentas, transacciones, aportes, intercompañía) | Secciones 1, 2, 3, 11, 12 |
 | **3** | Módulo de Contabilidad (pantallas, conexión a Bold, formularios) | Secciones 3, 15.3 |
 | **4** | HYDREX — Costeo e Inventario (insumos, componentes de costo, motor de cálculo, proveedores, compras) | Sección 4 completa, 15.4 |
-| **5** | Documentos (conexión OneDrive vía Microsoft Graph) | Sección 6, 15.5 |
-| **6** | Tareas y clientes (HANGARC, VirtualWaiter) | Secciones 4A, 5, 15.6 |
-| **7** | Dashboard general y roles/configuración | Secciones 7, 13, 15.1, 15.7 |
-| **8** (futuro) | Integraciones avanzadas: Shopify, Mercado Libre, Meta Ads | Sección 8 (fases 2 y 3) |
+| **5** | HARDTECH — Ventas de tecnología y mantenimientos (flujo de venta, compras multi-moneda, comisiones, fondo sin cuenta propia) | Sección 4C completa |
+| **6** | Documentos (conexión OneDrive vía Microsoft Graph) | Sección 6, 15.5 |
+| **7** | Tareas y clientes (HANGARC, VirtualWaiter, HARDTECH) | Secciones 4A, 5, 15.6 |
+| **8** | Dashboard general y roles/configuración | Secciones 7, 13, 15.1, 15.7 |
+| **9** | Diseño y experiencia visual — pulir la apariencia de toda la plataforma ya construida, y revisión de rendimiento (cold starts, consultas sin optimizar, índices, caché en el cliente) | Todas |
+| **10** | Control de acceso — camino robusto: tabla `correos_autorizados` integrada con el sistema de roles de la Fase 8, en vez de invitar manualmente desde el panel de Supabase | Sección 13 |
+| **11** (futuro) | Integraciones avanzadas: Shopify, Mercado Libre, Meta Ads | Sección 8 (fases 2 y 3) |
 
 La **Fase 1** es la única que no necesita un chat de Claude ni un prompt para Cursor — son cuentas y clics que Tomás y Samuel hacen directamente. De la Fase 2 en adelante sí se sigue el flujo de la sección 16.
 
