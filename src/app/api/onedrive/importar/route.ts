@@ -72,6 +72,32 @@ export async function POST() {
     )
 
     const rootChildren = await listChildren()
+    const documentsFolder = rootChildren.find(
+      (item) => item.folder && item.name === 'Documents'
+    )
+
+    let documentsChildren: GraphDriveItem[] = []
+    if (documentsFolder) {
+      try {
+        documentsChildren = await listChildren(documentsFolder.id)
+      } catch {
+        documentsChildren = []
+      }
+    }
+
+    // Preferir carpetas dentro de Documents; completar con coincidencias en la raíz.
+    const candidatos = new Map<string, GraphDriveItem>()
+    for (const item of rootChildren) {
+      if (!item.folder) continue
+      const codigo = item.name.toUpperCase()
+      if (porCodigo.has(codigo)) candidatos.set(codigo, item)
+    }
+    for (const item of documentsChildren) {
+      if (!item.folder) continue
+      const codigo = item.name.toUpperCase()
+      if (porCodigo.has(codigo)) candidatos.set(codigo, item) // Documents gana si hay ambas
+    }
+
     let negocios_mapeados = 0
     const counters = { documentos: 0, carpetas: 0 }
     const mappedRoots = new Map<string, string>()
@@ -79,9 +105,8 @@ export async function POST() {
     const { data: existentes } = await supabase.from('documentos').select('onedrive_item_id')
     const existingIds = new Set((existentes ?? []).map((r) => r.onedrive_item_id as string))
 
-    for (const item of rootChildren) {
-      if (!item.folder) continue
-      const negocio = porCodigo.get(item.name.toUpperCase())
+    for (const [codigo, item] of candidatos) {
+      const negocio = porCodigo.get(codigo)
       if (!negocio) continue
 
       const { error: mapError } = await supabase
