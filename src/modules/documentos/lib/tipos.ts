@@ -20,3 +20,20 @@ export type NegocioOption = {
   nombre: string
   onedrive_root_folder_id: string | null
 }
+
+export type TareaAfectadaEliminacion = {
+  id: string
+  titulo: string
+  negocio_nombre: string
+  documentos_nombres: string[]
+}
+
+export type EliminacionPreview = {
+  documento_id: string
+  nombre: string
+  es_carpeta: boolean
+  total_items: number
+  total_archivos: number
+  total_carpetas: number
+  tareas: TareaAfectadaEliminacion[]
+}

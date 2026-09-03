@@ -248,3 +248,89 @@ export async function uploadSmallFile(
   }
   return (await res.json()) as GraphDriveItem
 }
+
+export class GraphRequestError extends Error {
+  constructor(
+    public status: number,
+    message: string
+  ) {
+    super(message)
+    this.name = 'GraphRequestError'
+  }
+}
+
+/** Elimina un ítem en OneDrive. 404 = ya no existe (OK para limpieza en BD). */
+export async function deleteDriveItem(itemId: string): Promise<'deleted' | 'not_found'> {
+  const token = await getValidAccessToken()
+  const res = await fetch(`${GRAPH}/me/drive/items/${encodeURIComponent(itemId)}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (res.status === 404) return 'not_found'
+  if (!res.ok) {
+    throw new GraphRequestError(res.status, await res.text())
+  }
+  return 'deleted'
+}
+
+type DeltaPage = {
+  value?: Array<GraphDriveItem & { '@removed'?: { reason?: string } }>
+  '@odata.nextLink'?: string
+  '@odata.deltaLink'?: string
+}
+
+export type DriveDeltaResult = {
+  deletedOnedriveIds: string[]
+  deltaLink: string | null
+}
+
+/** Recorre el delta del drive y devuelve IDs eliminados + nuevo deltaLink. */
+export async function fetchDriveDelta(startUrl?: string | null): Promise<DriveDeltaResult> {
+  const deletedOnedriveIds: string[] = []
+  let nextUrl: string | null = startUrl ?? `${GRAPH}/me/drive/root/delta`
+  let deltaLink: string | null = null
+
+  while (nextUrl) {
+    const token = await getValidAccessToken()
+    const res = await fetch(nextUrl, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    if (!res.ok) {
+      throw new GraphRequestError(res.status, await res.text())
+    }
+    const data = (await res.json()) as DeltaPage
+    for (const item of data.value ?? []) {
+      if (item['@removed']) {
+        deletedOnedriveIds.push(item.id)
+      }
+    }
+    if (data['@odata.deltaLink']) {
+      deltaLink = data['@odata.deltaLink']
+      nextUrl = null
+    } else {
+      nextUrl = data['@odata.nextLink'] ?? null
+    }
+  }
+
+  return { deletedOnedriveIds, deltaLink }
+}
+
+export async function getStoredDeltaLink(): Promise<string | null> {
+  const supabase = createAdminClient()
+  const { data, error } = await supabase
+    .from('ms_graph_tokens')
+    .select('drive_delta_link')
+    .eq('id', 1)
+    .maybeSingle()
+  if (error) throw new Error(error.message)
+  return (data?.drive_delta_link as string | null) ?? null
+}
+
+export async function saveDeltaLink(deltaLink: string | null): Promise<void> {
+  const supabase = createAdminClient()
+  const { error } = await supabase
+    .from('ms_graph_tokens')
+    .update({ drive_delta_link: deltaLink, updated_at: new Date().toISOString() })
+    .eq('id', 1)
+  if (error) throw new Error(error.message)
+}

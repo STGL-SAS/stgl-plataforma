@@ -1,7 +1,9 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import type { DocumentoRow, NegocioOption } from '../lib/tipos'
+import type { DocumentoRow, EliminacionPreview, NegocioOption } from '../lib/tipos'
+import { DeleteIconButton } from '@/components/ui/IconAction'
+import { EliminarDocumentoModal } from './EliminarDocumentoModal'
 
 interface BreadcrumbItem {
   id: string | null
@@ -96,7 +98,11 @@ export function DocumentosExplorer({
   const [showUpload, setShowUpload] = useState(false)
   const [showFolder, setShowFolder] = useState(false)
   const [busy, setBusy] = useState(false)
-  const [importing, setImporting] = useState(false)
+  const [syncing, setSyncing] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState<DocumentoRow | null>(null)
+  const [deletePreview, setDeletePreview] = useState<EliminacionPreview | null>(null)
+  const [deletePreviewLoading, setDeletePreviewLoading] = useState(false)
+  const [deleteConfirming, setDeleteConfirming] = useState(false)
 
   const [uploadForm, setUploadForm] = useState(
     lockedInit?.uploadForm ?? {
@@ -181,36 +187,120 @@ export function DocumentosExplorer({
     return n?.onedrive_root_folder_id ?? null
   }
 
-  async function importFromOneDrive() {
-    setImporting(true)
+  async function syncWithOneDrive() {
+    setSyncing(true)
     setError(null)
     setBanner(null)
     try {
-      const res = await fetch('/api/onedrive/importar', { method: 'POST' })
+      const res = await fetch('/api/onedrive/sincronizar', { method: 'POST' })
       const json = (await res.json()) as {
         error?: string
-        negocios_mapeados?: number
         documentos_importados?: number
         carpetas_importadas?: number
+        documentos_eliminados?: number
+        tareas_actualizadas?: number
         roots?: { id: string; onedrive_root_folder_id: string }[]
       }
-      if (!res.ok) throw new Error(json.error || 'Error al importar')
-      setBanner(
-        `Se importaron ${json.documentos_importados ?? 0} documentos y ${json.carpetas_importadas ?? 0} carpetas.`
-      )
-      const nextNegocios = negocios.map((n) => {
-        const hit = json.roots?.find((r) => r.id === n.id)
-        return hit ? { ...n, onedrive_root_folder_id: hit.onedrive_root_folder_id } : n
-      })
-      setNegocios(nextNegocios)
-      const root = navRootForNegocio(nextNegocios, negocioId)
-      setParentId(root.id)
-      setCrumbs([root])
-      setQApplied('')
+      if (!res.ok) throw new Error(json.error || 'Error al sincronizar')
+
+      const docsImp = json.documentos_importados ?? 0
+      const carpetasImp = json.carpetas_importadas ?? 0
+      const docsElim = json.documentos_eliminados ?? 0
+      const tareas = json.tareas_actualizadas ?? 0
+
+      if (json.roots?.length) {
+        const nextNegocios = negocios.map((n) => {
+          const hit = json.roots?.find((r) => r.id === n.id)
+          return hit ? { ...n, onedrive_root_folder_id: hit.onedrive_root_folder_id } : n
+        })
+        setNegocios(nextNegocios)
+        const root = navRootForNegocio(nextNegocios, negocioId)
+        setParentId(root.id)
+        setCrumbs([root])
+      }
+
+      const partes: string[] = []
+      if (docsImp > 0 || carpetasImp > 0) {
+        partes.push(
+          `Se importaron ${docsImp} documento${docsImp === 1 ? '' : 's'} y ${carpetasImp} carpeta${carpetasImp === 1 ? '' : 's'}.`
+        )
+      }
+      if (docsElim > 0) {
+        const tareasMsg =
+          tareas > 0
+            ? ` ${tareas} tarea${tareas === 1 ? '' : 's'} ${tareas === 1 ? 'fue' : 'fueron'} actualizada${tareas === 1 ? '' : 's'}.`
+            : ''
+        partes.push(
+          `${docsElim} documento${docsElim === 1 ? '' : 's'} eliminado${docsElim === 1 ? '' : 's'} en OneDrive.${tareasMsg}`
+        )
+      }
+
+      if (partes.length > 0) {
+        setBanner(partes.join(' '))
+        setQApplied('')
+        await load()
+      } else {
+        setBanner('Sincronización completada. No hubo cambios en OneDrive.')
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al importar')
+      setError(err instanceof Error ? err.message : 'Error al sincronizar')
     } finally {
-      setImporting(false)
+      setSyncing(false)
+    }
+  }
+
+  function closeDeleteModal() {
+    if (deleteConfirming) return
+    setDeleteTarget(null)
+    setDeletePreview(null)
+    setDeletePreviewLoading(false)
+  }
+
+  async function openDeleteModal(doc: DocumentoRow) {
+    setDeleteTarget(doc)
+    setDeletePreview(null)
+    setDeletePreviewLoading(true)
+    setError(null)
+    try {
+      const res = await fetch(`/api/documentos/${doc.id}/eliminar-preview`)
+      const json = (await res.json()) as { preview?: EliminacionPreview; error?: string }
+      if (!res.ok) throw new Error(json.error || 'No se pudo preparar la eliminación')
+      setDeletePreview(json.preview ?? null)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error')
+      setDeleteTarget(null)
+    } finally {
+      setDeletePreviewLoading(false)
+    }
+  }
+
+  async function confirmDelete() {
+    if (!deleteTarget) return
+    setDeleteConfirming(true)
+    setError(null)
+    try {
+      const res = await fetch(`/api/documentos/${deleteTarget.id}`, { method: 'DELETE' })
+      const json = (await res.json()) as {
+        error?: string
+        eliminados?: number
+        tareas_actualizadas?: number
+      }
+      if (!res.ok) throw new Error(json.error || 'No se pudo eliminar')
+
+      const n = json.eliminados ?? 1
+      const tareas = json.tareas_actualizadas ?? 0
+      const tareasMsg =
+        tareas > 0
+          ? ` Se actualizó el historial de ${tareas} tarea${tareas === 1 ? '' : 's'}.`
+          : ''
+      setBanner(`Se eliminó${n === 1 ? '' : 'n'} ${n} elemento${n === 1 ? '' : 's'}.${tareasMsg}`)
+      setDeleteTarget(null)
+      setDeletePreview(null)
+      await load()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al eliminar')
+    } finally {
+      setDeleteConfirming(false)
     }
   }
 
@@ -320,109 +410,118 @@ export function DocumentosExplorer({
         <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
       )}
 
-      <div className="flex flex-wrap gap-3 items-end">
+      <div className="space-y-3">
         {soloCarpetaNegocio && effectiveNegocioId && (
-          <p className="w-full text-xs text-[var(--cmd-text-dim)]">
+          <p className="text-xs text-[var(--cmd-text-dim)]">
             Carpeta del negocio en OneDrive
           </p>
         )}
-        {!lockedNegocioId && (
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="font-medium">Negocio</span>
-          <select
-            className="rounded-md border border-zinc-300 px-3 py-2"
-            value={negocioId}
-            onChange={(e) => applyNegocioFilter(e.target.value)}
-          >
-            <option value="">Todos</option>
-            {negocios.map((n) => (
-              <option key={n.id} value={n.id}>
-                {n.nombre}
-              </option>
-            ))}
-          </select>
-        </label>
-        )}
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="font-medium">Categoría</span>
-          <select
-            className="rounded-md border border-zinc-300 px-3 py-2"
-            value={categoria}
-            onChange={(e) => setCategoria(e.target.value)}
-          >
-            <option value="">Todas</option>
-            {categorias.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="flex flex-col gap-1 text-sm flex-1 min-w-[12rem]">
-          <span className="font-medium">Buscar</span>
-          <div className="flex gap-2">
-            <input
-              className="flex-1 rounded-md border border-zinc-300 px-3 py-2"
-              placeholder="Nombre…"
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') setQApplied(q.trim())
-              }}
-            />
-            <button
-              type="button"
-              className="rounded-md border border-zinc-300 px-3 py-2 text-sm"
-              onClick={() => setQApplied(q.trim())}
+
+        <div className="flex flex-wrap gap-3 items-end">
+          {!lockedNegocioId && (
+            <label className="flex flex-col gap-1 text-sm">
+              <span className="font-medium">Negocio</span>
+              <select
+                className="rounded-md border border-zinc-300 px-3 py-2 min-w-[10rem]"
+                value={negocioId}
+                onChange={(e) => applyNegocioFilter(e.target.value)}
+              >
+                <option value="">Todos</option>
+                {negocios.map((n) => (
+                  <option key={n.id} value={n.id}>
+                    {n.nombre}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+          <label className="flex flex-col gap-1 text-sm">
+            <span className="font-medium">Categoría</span>
+            <select
+              className="rounded-md border border-zinc-300 px-3 py-2 min-w-[10rem]"
+              value={categoria}
+              onChange={(e) => setCategoria(e.target.value)}
             >
-              Buscar
-            </button>
-            {qApplied && (
+              <option value="">Todas</option>
+              {categorias.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="flex min-w-0 flex-1 flex-col gap-1 text-sm basis-full sm:basis-auto sm:min-w-[14rem]">
+            <span className="font-medium">Buscar</span>
+            <div className="flex gap-2">
+              <input
+                className="min-w-0 flex-1 rounded-md border border-zinc-300 px-3 py-2"
+                placeholder="Nombre…"
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') setQApplied(q.trim())
+                }}
+              />
               <button
                 type="button"
-                className="text-sm text-zinc-600"
-                onClick={() => {
-                  setQ('')
-                  setQApplied('')
-                }}
+                className="shrink-0 rounded-md border border-zinc-300 px-3 py-2 text-sm"
+                onClick={() => setQApplied(q.trim())}
               >
-                Limpiar
+                Buscar
               </button>
-            )}
+              {qApplied && (
+                <button
+                  type="button"
+                  className="shrink-0 text-sm text-zinc-600"
+                  onClick={() => {
+                    setQ('')
+                    setQApplied('')
+                  }}
+                >
+                  Limpiar
+                </button>
+              )}
+            </div>
+          </label>
+        </div>
+
+        {canImport && (
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              disabled={!connected || syncing}
+              onClick={() => void syncWithOneDrive()}
+              className="rounded-md border border-zinc-300 px-4 py-2 text-sm disabled:opacity-40"
+            >
+              {syncing ? 'Sincronizando…' : 'Sincronizar con OneDrive'}
+            </button>
           </div>
-        </label>
-        {canImport && !compact && (
+        )}
+
+        <div className="flex flex-wrap gap-2">
           <button
             type="button"
-            disabled={!connected || importing}
-            onClick={() => void importFromOneDrive()}
+            disabled={!connected}
+            onClick={() => setShowFolder(true)}
             className="rounded-md border border-zinc-300 px-4 py-2 text-sm disabled:opacity-40"
           >
-            {importing ? 'Importando…' : 'Importar desde OneDrive'}
+            Nueva carpeta
           </button>
-        )}
-        <button
-          type="button"
-          disabled={!connected}
-          onClick={() => setShowFolder(true)}
-          className="rounded-md border border-zinc-300 px-4 py-2 text-sm disabled:opacity-40"
-        >
-          Nueva carpeta
-        </button>
-        <button
-          type="button"
-          disabled={!connected}
-          onClick={() => setShowUpload(true)}
-          className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-40"
-        >
-          Subir archivo
-        </button>
+          <button
+            type="button"
+            disabled={!connected}
+            onClick={() => setShowUpload(true)}
+            className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-40"
+          >
+            Subir archivo
+          </button>
+        </div>
       </div>
 
-      {importing && (
+      {syncing && (
         <p className="flex items-center gap-2 text-sm text-zinc-600">
           <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-zinc-300 border-t-zinc-800" />
-          Importando desde OneDrive (puede tardar)…
+          Sincronizando con OneDrive (puede tardar)…
         </p>
       )}
 
@@ -512,16 +611,21 @@ export function DocumentosExplorer({
                   )}
                   <td className="px-4 py-3">{d.fecha}</td>
                   <td className="px-4 py-3 text-right">
-                    {d.onedrive_web_url && (
-                      <a
-                        href={d.onedrive_web_url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-xs text-blue-700 hover:underline"
-                      >
-                        Abrir en OneDrive
-                      </a>
-                    )}
+                    <div className="inline-flex items-center gap-2">
+                      {d.onedrive_web_url && (
+                        <a
+                          href={d.onedrive_web_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-xs text-blue-700 hover:underline"
+                        >
+                          Abrir en OneDrive
+                        </a>
+                      )}
+                      {canImport && connected && (
+                        <DeleteIconButton onClick={() => void openDeleteModal(d)} />
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -656,6 +760,15 @@ export function DocumentosExplorer({
           </form>
         </div>
       )}
+
+      <EliminarDocumentoModal
+        open={deleteTarget !== null}
+        preview={deletePreview}
+        loading={deletePreviewLoading}
+        confirming={deleteConfirming}
+        onClose={closeDeleteModal}
+        onConfirm={() => void confirmDelete()}
+      />
     </div>
     </div>
   )
