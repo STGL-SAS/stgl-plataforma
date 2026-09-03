@@ -8,7 +8,7 @@ export function ContabilidadShell({ children }: { children: React.ReactNode }) {
     <ModuleShell
       title="Contabilidad"
       subtitle="Ledger, transacciones y socios STGL"
-      accent="#94A3B8"
+      accent="var(--cmd-stgl)"
       links={CONTABILIDAD_LINKS}
     >
       {children}

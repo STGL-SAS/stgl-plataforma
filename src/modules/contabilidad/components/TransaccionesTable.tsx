@@ -2,6 +2,7 @@
 
 import type { Transaccion } from '../types'
 import { formatCOP, formatFecha } from '../utils'
+import { NegocioRowLabel } from './NegocioRowLabel'
 
 interface Props {
   transacciones: Transaccion[]
@@ -9,14 +10,17 @@ interface Props {
 }
 
 function EstadoBadge({ estado }: { estado: Transaccion['estado'] }) {
-  const styles =
-    estado === 'clasificada'
-      ? 'bg-emerald-100 text-emerald-800'
-      : 'bg-amber-100 text-amber-800'
-  const label = estado === 'clasificada' ? 'Clasificada' : 'Pendiente'
+  const isClasificada = estado === 'clasificada'
+  const label = isClasificada ? 'Clasificada' : 'Pendiente'
 
   return (
-    <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${styles}`}>
+    <span
+      className={`cmd-badge inline-flex rounded-full px-2 py-0.5 ${
+        isClasificada
+          ? 'bg-emerald-500/15 text-emerald-300'
+          : 'bg-amber-500/15 text-amber-300'
+      }`}
+    >
       {label}
     </span>
   )
@@ -25,29 +29,29 @@ function EstadoBadge({ estado }: { estado: Transaccion['estado'] }) {
 export function TransaccionesTable({ transacciones, onClasificar }: Props) {
   if (transacciones.length === 0) {
     return (
-      <p className="rounded-lg border border-dashed border-zinc-300 p-8 text-center text-zinc-500">
+      <p className="cmd-panel border-dashed p-8 text-center text-sm text-[var(--cmd-text-dim)]">
         No hay transacciones con estos filtros.
       </p>
     )
   }
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-zinc-200">
-      <table className="min-w-full divide-y divide-zinc-200 text-sm">
-        <thead className="bg-zinc-50">
+    <div className="cmd-panel overflow-x-auto">
+      <table className="cmd-table min-w-full text-sm">
+        <thead className="text-left">
           <tr>
-            <th className="px-4 py-3 text-left font-medium text-zinc-600">Fecha</th>
-            <th className="px-4 py-3 text-left font-medium text-zinc-600">Negocio</th>
-            <th className="px-4 py-3 text-left font-medium text-zinc-600">Tipo</th>
-            <th className="px-4 py-3 text-left font-medium text-zinc-600">Categoría</th>
-            <th className="px-4 py-3 text-left font-medium text-zinc-600">Nombre</th>
-            <th className="px-4 py-3 text-right font-medium text-zinc-600">Monto</th>
-            <th className="px-4 py-3 text-left font-medium text-zinc-600">Estado</th>
-            <th className="px-4 py-3 text-left font-medium text-zinc-600">Origen</th>
+            <th className="px-4 py-3">Fecha</th>
+            <th className="px-4 py-3">Negocio</th>
+            <th className="px-4 py-3">Tipo</th>
+            <th className="px-4 py-3">Categoría</th>
+            <th className="px-4 py-3">Nombre</th>
+            <th className="px-4 py-3 text-right">Monto</th>
+            <th className="px-4 py-3">Estado</th>
+            <th className="px-4 py-3">Origen</th>
             <th className="px-4 py-3" />
           </tr>
         </thead>
-        <tbody className="divide-y divide-zinc-100 bg-white">
+        <tbody>
           {transacciones.map((t) => {
             const nombre =
               t.estado === 'clasificada'
@@ -55,27 +59,38 @@ export function TransaccionesTable({ transacciones, onClasificar }: Props) {
                 : t.nombre_original ?? t.nombre_interno
 
             return (
-              <tr key={t.id} className="hover:bg-zinc-50">
-                <td className="px-4 py-3 whitespace-nowrap">{formatFecha(t.fecha)}</td>
-                <td className="px-4 py-3">{t.negocio?.codigo ?? '—'}</td>
-                <td className="px-4 py-3 capitalize">{t.tipo}</td>
-                <td className="px-4 py-3">{t.categoria ?? '—'}</td>
-                <td className="px-4 py-3 max-w-xs truncate" title={nombre ?? ''}>
+              <tr key={t.id} className="hover:bg-[var(--cmd-panel-hover)]">
+                <td className="px-4 py-3 whitespace-nowrap text-[var(--cmd-text-muted)]">
+                  {formatFecha(t.fecha)}
+                </td>
+                <td className="px-4 py-3">
+                  {t.negocio?.codigo ? (
+                    <NegocioRowLabel
+                      codigo={t.negocio.codigo}
+                      nombre={t.negocio.nombre ?? t.negocio.codigo}
+                    />
+                  ) : (
+                    '—'
+                  )}
+                </td>
+                <td className="px-4 py-3 capitalize text-[var(--cmd-text-muted)]">{t.tipo}</td>
+                <td className="px-4 py-3 text-[var(--cmd-text-muted)]">{t.categoria ?? '—'}</td>
+                <td className="max-w-xs truncate px-4 py-3 text-[var(--cmd-text)]" title={nombre ?? ''}>
                   {nombre ?? '—'}
                 </td>
-                <td className="px-4 py-3 text-right font-medium whitespace-nowrap">
-                  {formatCOP(t.monto)}
+                <td className="px-4 py-3 text-right whitespace-nowrap">
+                  <span className="font-label-mono text-[var(--cmd-text)]">{formatCOP(t.monto)}</span>
                 </td>
                 <td className="px-4 py-3">
                   <EstadoBadge estado={t.estado} />
                 </td>
-                <td className="px-4 py-3 capitalize">{t.origen}</td>
+                <td className="px-4 py-3 capitalize text-[var(--cmd-text-muted)]">{t.origen}</td>
                 <td className="px-4 py-3">
                   {t.estado === 'pendiente_revision' && onClasificar && (
                     <button
                       type="button"
                       onClick={() => onClasificar(t)}
-                      className="text-sm font-medium text-blue-600 hover:text-blue-800"
+                      className="text-sm font-medium text-[var(--cmd-stgl)] hover:underline"
                     >
                       Clasificar
                     </button>

@@ -17,14 +17,19 @@ export function BoldPendientesPageClient({ categorias }: Props) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold">Bold pendientes de clasificar</h2>
-        <p className="text-sm text-zinc-600">
-          Transacciones recibidas por webhook. Deben clasificarse manualmente antes de contar en reportes.
+        <h2 className="text-base font-semibold text-[var(--cmd-text)]">
+          Bold pendientes de clasificar
+        </h2>
+        <p className="mt-1 text-sm text-[var(--cmd-text-muted)]">
+          Transacciones recibidas por webhook. Deben clasificarse manualmente antes de contar en
+          reportes.
         </p>
       </div>
 
-      {loading && <p className="text-sm text-zinc-500">Cargando…</p>}
-      {error && <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+      {loading && <p className="text-sm text-[var(--cmd-text-dim)]">Cargando…</p>}
+      {error && (
+        <p className="rounded-md bg-red-500/10 px-3 py-2 text-sm text-red-300">{error}</p>
+      )}
       {!loading && !error && (
         <BoldPendientesList transacciones={data} onClasificar={setTarget} />
       )}

@@ -1,10 +1,13 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useMemo, useState } from 'react'
+import { deleteVentaHardtech } from '../actions/mutations'
 import { calcularGananciaVenta, formatCOP } from '../motor-calculo'
 import type { HardtechCompra, HardtechEstadoVenta, HardtechGastoExtra, HardtechVenta } from '../lib/tipos'
 import { ESTADOS_VENTA } from '../lib/tipos'
+import { DeleteIconButton } from '@/components/ui/IconAction'
 
 interface VentaConDetalle extends HardtechVenta {
   compras: HardtechCompra[]
@@ -20,8 +23,31 @@ function labelEstado(e: HardtechEstadoVenta) {
 }
 
 export function VentasList({ ventas }: Props) {
+  const router = useRouter()
   const [estado, setEstado] = useState<HardtechEstadoVenta | ''>('')
   const [clienteQ, setClienteQ] = useState('')
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  async function eliminarVenta(v: VentaConDetalle) {
+    if (
+      !window.confirm(
+        `¿Eliminar la venta «${v.titulo}»? Se borrarán también sus compras y gastos asociados. Esta acción no se puede deshacer.`
+      )
+    ) {
+      return
+    }
+    setDeletingId(v.id)
+    setError(null)
+    try {
+      await deleteVentaHardtech(v.id)
+      router.refresh()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'No se pudo eliminar la venta')
+    } finally {
+      setDeletingId(null)
+    }
+  }
 
   const filtradas = useMemo(() => {
     return ventas.filter((v) => {
@@ -35,6 +61,9 @@ export function VentasList({ ventas }: Props) {
 
   return (
     <div className="space-y-4">
+      {error && (
+        <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
+      )}
       <div className="flex flex-wrap gap-3 items-end">
         <label className="flex flex-col gap-1 text-sm">
           <span className="font-medium">Estado</span>
@@ -75,6 +104,7 @@ export function VentasList({ ventas }: Props) {
               <th className="px-4 py-3">Estado</th>
               <th className="px-4 py-3">Compra</th>
               <th className="px-4 py-3 text-right">Ganancia neta</th>
+              <th className="px-4 py-3 w-12" />
             </tr>
           </thead>
           <tbody>
@@ -95,12 +125,18 @@ export function VentasList({ ventas }: Props) {
                   <td className="px-4 py-3">{labelEstado(v.estado)}</td>
                   <td className="px-4 py-3 text-zinc-600 max-w-xs truncate">{compraTxt}</td>
                   <td className="px-4 py-3 text-right font-medium">{formatCOP(calc.gananciaNeta)}</td>
+                  <td className="px-4 py-3 text-right">
+                    <DeleteIconButton
+                      disabled={deletingId === v.id}
+                      onClick={() => void eliminarVenta(v)}
+                    />
+                  </td>
                 </tr>
               )
             })}
             {filtradas.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-zinc-500">
+                <td colSpan={6} className="px-4 py-8 text-center text-zinc-500">
                   No hay ventas con esos filtros.
                 </td>
               </tr>

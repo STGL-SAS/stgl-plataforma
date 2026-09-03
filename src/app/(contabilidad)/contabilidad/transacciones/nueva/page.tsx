@@ -32,23 +32,28 @@ export default async function NuevaTransaccionPage() {
       <div>
         <Link
           href="/contabilidad/transacciones"
-          className="text-sm text-zinc-500 hover:text-zinc-700"
+          className="text-sm text-[var(--cmd-text-muted)] hover:text-[var(--cmd-text)] hover:underline"
         >
           ← Volver a transacciones
         </Link>
-        <h2 className="mt-2 text-lg font-semibold">Nueva transacción manual</h2>
-        <p className="text-sm text-zinc-600">
-          Se registra directamente como clasificada (origen manual). Ingresos HYDREX incluyen detalle de costeo.
+        <h2 className="mt-2 text-base font-semibold text-[var(--cmd-text)]">
+          Nueva transacción manual
+        </h2>
+        <p className="mt-1 text-sm text-[var(--cmd-text-muted)]">
+          Se registra directamente como clasificada (origen manual). Ingresos HYDREX incluyen detalle
+          de costeo.
         </p>
       </div>
 
-      <TransaccionFormManual
+      <div className="cmd-panel p-4">
+        <TransaccionFormManual
         negocios={negocios}
         cuentas={cuentas}
         categoriasSugeridas={categorias}
         hydrexCatalog={hydrexCatalog}
         hydrexCatalogError={hydrexCatalogError}
-      />
+        />
+      </div>
     </div>
   )
 }

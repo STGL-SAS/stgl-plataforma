@@ -26,12 +26,15 @@ type NavItem = {
   exact?: boolean
 }
 
-const MAIN_NAV: NavItem[] = [
+const PLATFORM_NAV: NavItem[] = [
   { href: '/', label: 'Inicio', icon: LayoutDashboard, exact: true },
   { href: '/contabilidad', label: 'Contabilidad', icon: Wallet },
   { href: '/tareas', label: 'Tareas', icon: ListTodo },
   { href: '/clientes', label: 'Clientes', icon: Users },
   { href: '/documentos', label: 'Documentos', icon: FolderOpen },
+]
+
+const BUSINESS_NAV: NavItem[] = [
   { href: '/hardtech/resumen', label: 'HARDTECH', logoCodigo: 'HARDTECH', color: commandColors.businesses.HARDTECH },
   { href: '/inventario-hydrex', label: 'HYDREX', logoCodigo: 'HYDREX', color: commandColors.businesses.HYDREX },
   { href: '/negocios/hangarc', label: 'HANGARC', logoCodigo: 'HANGARC', color: commandColors.businesses.HANGARC },
@@ -103,10 +106,17 @@ export function PlatformChrome({ children }: { children: React.ReactNode }) {
           <span className="text-sm font-semibold text-[var(--cmd-text)]">STGL Plataforma</span>
         </Link>
 
-        <nav className="flex flex-1 flex-col gap-0.5 px-2">
-          {MAIN_NAV.map((item) => (
-            <SidebarLink key={item.href} item={item} pathname={pathname} />
-          ))}
+        <nav className="flex flex-1 flex-col px-2">
+          <div className="flex flex-col gap-0.5">
+            {PLATFORM_NAV.map((item) => (
+              <SidebarLink key={item.href} item={item} pathname={pathname} />
+            ))}
+          </div>
+          <div className="mt-5 flex flex-col gap-0.5 border-t border-[var(--cmd-border)] pt-4">
+            {BUSINESS_NAV.map((item) => (
+              <SidebarLink key={item.href} item={item} pathname={pathname} />
+            ))}
+          </div>
         </nav>
 
         <div className="mt-auto border-t border-[var(--cmd-border)] px-2 pt-3">

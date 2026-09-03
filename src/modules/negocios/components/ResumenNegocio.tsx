@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { CommandPanel } from '@/components/layout/ModuleShell'
 import { formatCOP } from '@/modules/contabilidad/utils'
+import { DocumentoItemIcon } from '@/modules/documentos/components/DocumentoItemIcon'
 import { ESTADO_LABEL } from '@/modules/tareas/types'
 import { BalanceNegocio } from './BalanceNegocio'
 import type { ResumenNegocioData } from '../lib/resumen-data'
@@ -130,23 +131,22 @@ export function ResumenNegocio({
         ) : (
           <ul className="space-y-2 text-sm">
             {documentos.map((d) => (
-              <li key={d.id} className="flex flex-wrap items-baseline justify-between gap-2">
-                {d.onedrive_web_url && !d.es_carpeta ? (
-                  <a
-                    href={d.onedrive_web_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="font-medium text-[var(--cmd-text)] hover:underline"
-                  >
-                    {d.es_carpeta ? '📁 ' : ''}
-                    {d.nombre}
-                  </a>
-                ) : (
-                  <span className="font-medium text-[var(--cmd-text)]">
-                    {d.es_carpeta ? '📁 ' : ''}
-                    {d.nombre}
-                  </span>
-                )}
+              <li key={d.id} className="flex flex-wrap items-center justify-between gap-2">
+                <span className="inline-flex min-w-0 items-center gap-2">
+                  <DocumentoItemIcon esCarpeta={d.es_carpeta} />
+                  {d.onedrive_web_url && !d.es_carpeta ? (
+                    <a
+                      href={d.onedrive_web_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="truncate font-medium text-[var(--cmd-text)] hover:underline"
+                    >
+                      {d.nombre}
+                    </a>
+                  ) : (
+                    <span className="truncate font-medium text-[var(--cmd-text)]">{d.nombre}</span>
+                  )}
+                </span>
                 <span className="text-xs capitalize text-[var(--cmd-text-muted)]">{d.categoria}</span>
               </li>
             ))}

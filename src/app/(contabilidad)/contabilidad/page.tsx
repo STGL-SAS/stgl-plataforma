@@ -2,6 +2,10 @@ import Link from 'next/link'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getBalanceConsolidado } from '@/modules/contabilidad/actions/balance'
 import { BalanceConsolidadoPanel } from '@/modules/contabilidad/components/BalanceConsolidadoPanel'
+import {
+  buildContabilidadResumenCards,
+  ContabilidadResumenCards,
+} from '@/modules/contabilidad/components/ContabilidadResumenCards'
 
 async function getResumen() {
   const supabase = createAdminClient()
@@ -37,66 +41,26 @@ export default async function ContabilidadPage() {
     // Tablas aún no migradas o sin credenciales
   }
 
-  const cards = [
-    {
-      href: '/contabilidad/transacciones',
-      title: 'Transacciones',
-      desc: 'Ledger central de ingresos y egresos',
-      stat: `${resumen.totalTransacciones} registradas`,
-    },
-    {
-      href: '/contabilidad/bold-pendientes',
-      title: 'Bold pendientes',
-      desc: 'Ventas recibidas sin clasificar',
-      stat: `${resumen.boldPendientes} por revisar`,
-      alert: resumen.boldPendientes > 0,
-    },
-    {
-      href: '/contabilidad/socios',
-      title: 'Estado de cuenta socios',
-      desc: 'Aportes por negocio (capital / préstamo)',
-      stat: 'Tomás · Samuel',
-    },
-    {
-      href: '/contabilidad/intercompania',
-      title: 'Intercompañía',
-      desc: 'Préstamos y transferencias entre negocios',
-      stat: `${resumen.interPendientes} pendientes`,
-    },
-  ]
+  const cards = buildContabilidadResumenCards(resumen)
 
   return (
     <div className="space-y-6">
-      <p className="text-zinc-600">
-        Módulo de contabilidad STGL — ledger central, clasificación Bold, aportes de socios e intercompañía.
-      </p>
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        {cards.map((card) => (
-          <Link
-            key={card.href}
-            href={card.href}
-            className={`rounded-lg border bg-white p-5 transition-shadow hover:shadow-md ${
-              card.alert ? 'border-amber-300' : 'border-zinc-200'
-            }`}
-          >
-            <h2 className="font-semibold text-zinc-900">{card.title}</h2>
-            <p className="mt-1 text-sm text-zinc-600">{card.desc}</p>
-            <p className={`mt-3 text-sm font-medium ${card.alert ? 'text-amber-700' : 'text-zinc-500'}`}>
-              {card.stat}
-            </p>
-          </Link>
-        ))}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <p className="text-sm text-[var(--cmd-text-muted)]">
+          Módulo de contabilidad STGL — ledger central, clasificación Bold, aportes de socios e
+          intercompañía.
+        </p>
+        <Link
+          href="/contabilidad/transacciones/nueva"
+          className="inline-flex shrink-0 rounded-md border border-[var(--cmd-border)] bg-[var(--cmd-panel-hover)] px-4 py-2 text-sm font-medium text-[var(--cmd-text)] transition-colors hover:border-[var(--cmd-stgl)]"
+        >
+          + Nueva transacción manual
+        </Link>
       </div>
 
-      {balance && <BalanceConsolidadoPanel balance={balance} />}
+      <ContabilidadResumenCards cards={cards} />
 
-      <Link
-        href="/contabilidad/transacciones/nueva"
-        className="inline-flex rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700"
-      >
-        + Nueva transacción manual
-      </Link>
+      {balance && <BalanceConsolidadoPanel balance={balance} />}
     </div>
   )
 }

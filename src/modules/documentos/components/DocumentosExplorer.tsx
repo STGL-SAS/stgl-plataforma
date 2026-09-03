@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { DocumentoRow, EliminacionPreview, NegocioOption } from '../lib/tipos'
 import { DeleteIconButton } from '@/components/ui/IconAction'
 import { EliminarDocumentoModal } from './EliminarDocumentoModal'
+import { DocumentoItemIcon } from './DocumentoItemIcon'
 
 interface BreadcrumbItem {
   id: string | null
@@ -578,28 +579,23 @@ export function DocumentosExplorer({
               docs.map((d) => (
                 <tr key={d.id} className="border-b border-zinc-100 hover:bg-zinc-50">
                   <td className="px-4 py-3">
-                    {d.es_carpeta ? (
-                      <button
-                        type="button"
-                        className="font-medium text-zinc-900 hover:underline"
-                        onClick={() => openFolder(d)}
-                      >
-                        <span className="mr-2 text-xs font-normal uppercase tracking-wide text-zinc-500">
-                          Carpeta
-                        </span>
-                        {d.nombre}
-                      </button>
-                    ) : (
-                      <span className="font-medium">
-                        <span className="mr-2 text-xs font-normal uppercase tracking-wide text-zinc-500">
-                          Archivo
-                        </span>
-                        {d.nombre}
-                      </span>
-                    )}
-                    {d.tipo_documento && !d.es_carpeta && (
-                      <span className="ml-2 text-xs text-zinc-500">{d.tipo_documento}</span>
-                    )}
+                    <div className="inline-flex items-center gap-2">
+                      <DocumentoItemIcon esCarpeta={d.es_carpeta} />
+                      {d.es_carpeta ? (
+                        <button
+                          type="button"
+                          className="font-medium text-zinc-900 hover:underline"
+                          onClick={() => openFolder(d)}
+                        >
+                          {d.nombre}
+                        </button>
+                      ) : (
+                        <span className="font-medium">{d.nombre}</span>
+                      )}
+                      {d.tipo_documento && !d.es_carpeta && (
+                        <span className="text-xs text-zinc-500">{d.tipo_documento}</span>
+                      )}
+                    </div>
                   </td>
                   <td className="px-4 py-3 capitalize">{d.categoria}</td>
                   {!soloCarpetaNegocio && (

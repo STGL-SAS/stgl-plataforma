@@ -20,10 +20,15 @@ export function TransaccionesPageClient({ negocios, categorias }: Props) {
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h2 className="text-lg font-semibold">Transacciones</h2>
+        <div>
+          <h2 className="text-base font-semibold text-[var(--cmd-text)]">Transacciones</h2>
+          <p className="mt-1 text-sm text-[var(--cmd-text-muted)]">
+            Ledger central de ingresos y egresos clasificados.
+          </p>
+        </div>
         <Link
           href="/contabilidad/transacciones/nueva"
-          className="inline-flex rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700"
+          className="inline-flex rounded-md border border-[var(--cmd-border)] bg-[var(--cmd-panel-hover)] px-4 py-2 text-sm font-medium text-[var(--cmd-text)] transition-colors hover:border-[var(--cmd-stgl)]"
         >
           Nueva transacción
         </Link>
@@ -36,13 +41,12 @@ export function TransaccionesPageClient({ negocios, categorias }: Props) {
         onChange={setFiltros}
       />
 
-      {loading && <p className="text-sm text-zinc-500">Cargando…</p>}
-      {error && <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+      {loading && <p className="text-sm text-[var(--cmd-text-dim)]">Cargando…</p>}
+      {error && (
+        <p className="rounded-md bg-red-500/10 px-3 py-2 text-sm text-red-300">{error}</p>
+      )}
       {!loading && !error && (
-        <TransaccionesTable
-          transacciones={data}
-          onClasificar={setClasificarTarget}
-        />
+        <TransaccionesTable transacciones={data} onClasificar={setClasificarTarget} />
       )}
 
       <BoldClasificarModal

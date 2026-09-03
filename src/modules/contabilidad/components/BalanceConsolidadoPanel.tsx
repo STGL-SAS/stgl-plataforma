@@ -1,5 +1,7 @@
-import { formatCOP } from '@/modules/hardtech/motor-calculo'
+import { CommandPanel } from '@/components/layout/ModuleShell'
+import { formatCOP } from '../utils'
 import type { BalanceConsolidado } from '../actions/balance'
+import { NegocioRowLabel } from './NegocioRowLabel'
 
 export function BalanceConsolidadoPanel({ balance }: { balance: BalanceConsolidado }) {
   const porSocio = new Map<string, { nombre: string; total: number }>()
@@ -10,24 +12,33 @@ export function BalanceConsolidadoPanel({ balance }: { balance: BalanceConsolida
   }
 
   return (
-    <div className="space-y-4 rounded-lg border border-zinc-200 bg-white p-6">
-      <h2 className="font-semibold text-zinc-900">Balance consolidado STGL</h2>
-      <p className="text-2xl font-semibold">{formatCOP(balance.total_consolidado)}</p>
-      <div className="overflow-x-auto">
-        <table className="min-w-full text-sm">
-          <thead className="border-b text-left text-zinc-600">
+    <CommandPanel glowColor="var(--cmd-stgl)">
+      <p className="text-sm text-[var(--cmd-text-muted)]">Balance consolidado STGL</p>
+      <p className="font-display mt-2 text-4xl font-semibold tracking-tight text-[var(--cmd-text)]">
+        {formatCOP(balance.total_consolidado)}
+      </p>
+
+      <div className="cmd-panel mt-6 overflow-x-auto">
+        <table className="cmd-table min-w-full text-sm">
+          <thead className="text-left">
             <tr>
-              <th className="py-2 pr-4">Negocio</th>
-              <th className="py-2 pr-4 text-right">Utilidad</th>
-              <th className="py-2">Origen</th>
+              <th className="px-4 py-3">Negocio</th>
+              <th className="px-4 py-3 text-right">Utilidad</th>
+              <th className="px-4 py-3">Origen</th>
             </tr>
           </thead>
           <tbody>
             {balance.por_negocio.map((b) => (
-              <tr key={b.negocio_id} className="border-b border-zinc-100">
-                <td className="py-2 pr-4">{b.negocio_nombre}</td>
-                <td className="py-2 pr-4 text-right font-medium">{formatCOP(b.utilidad)}</td>
-                <td className="py-2 text-zinc-500 text-xs">
+              <tr key={b.negocio_id} className="hover:bg-[var(--cmd-panel-hover)]">
+                <td className="px-4 py-3">
+                  <NegocioRowLabel codigo={b.negocio_codigo} nombre={b.negocio_nombre} />
+                </td>
+                <td className="px-4 py-3 text-right">
+                  <span className="font-label-mono text-[var(--cmd-text)]">
+                    {formatCOP(b.utilidad)}
+                  </span>
+                </td>
+                <td className="px-4 py-3 text-xs text-[var(--cmd-text-muted)]">
                   {b.origen === 'ganancia_calculada' ? 'Ganancia neta HARDTECH' : 'Ingresos − egresos'}
                 </td>
               </tr>
@@ -35,16 +46,23 @@ export function BalanceConsolidadoPanel({ balance }: { balance: BalanceConsolida
           </tbody>
         </table>
       </div>
-      <div>
-        <h3 className="text-sm font-medium text-zinc-700 mb-2">Utilidad teórica repartible por socio</h3>
-        <ul className="text-sm space-y-1">
+
+      <div className="cmd-panel mt-4 p-4">
+        <h3 className="text-sm font-semibold text-[var(--cmd-text)]">
+          Utilidad teórica repartible por socio
+        </h3>
+        <p className="mt-1 text-xs text-[var(--cmd-text-dim)]">
+          Solo informativo: no implica un reparto ni pago real.
+        </p>
+        <ul className="mt-3 space-y-2 text-sm">
           {[...porSocio.values()].map((s) => (
-            <li key={s.nombre}>
-              {s.nombre}: <strong>{formatCOP(s.total)}</strong>
+            <li key={s.nombre} className="flex items-center justify-between gap-3">
+              <span className="text-[var(--cmd-text-muted)]">{s.nombre}</span>
+              <span className="font-label-mono text-[var(--cmd-text)]">{formatCOP(s.total)}</span>
             </li>
           ))}
         </ul>
       </div>
-    </div>
+    </CommandPanel>
   )
 }

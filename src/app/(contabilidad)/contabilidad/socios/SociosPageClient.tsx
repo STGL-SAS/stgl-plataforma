@@ -17,8 +17,8 @@ export function SociosPageClient({ socios, negocios }: Props) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold">Estado de cuenta por socio</h2>
-        <p className="text-sm text-zinc-600">
+        <h2 className="text-base font-semibold text-[var(--cmd-text)]">Estado de cuenta por socio</h2>
+        <p className="mt-1 text-sm text-[var(--cmd-text-muted)]">
           Aportes registrados por negocio, separados en capital y préstamo.
         </p>
       </div>

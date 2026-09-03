@@ -7,12 +7,16 @@ import {
 } from '../actions/intercompania'
 import type { MovimientoIntercompania, Negocio } from '../types'
 import { formatCOP, formatFecha } from '../utils'
+import { NegocioRowLabel } from './NegocioRowLabel'
 
 interface Props {
   movimientos: MovimientoIntercompania[]
   negocios: Negocio[]
   onRefresh: () => void
 }
+
+const fieldClass =
+  'rounded-md border border-[var(--cmd-border)] bg-[var(--cmd-panel)] px-3 py-2 text-[var(--cmd-text)]'
 
 export function IntercompaniaTable({ movimientos, negocios, onRefresh }: Props) {
   const [showForm, setShowForm] = useState(false)
@@ -65,60 +69,68 @@ export function IntercompaniaTable({ movimientos, negocios, onRefresh }: Props) 
         <button
           type="button"
           onClick={() => setShowForm(!showForm)}
-          className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700"
+          className="rounded-md border border-[var(--cmd-border)] bg-[var(--cmd-panel-hover)] px-4 py-2 text-sm font-medium text-[var(--cmd-text)] transition-colors hover:border-[var(--cmd-stgl)]"
         >
           {showForm ? 'Cancelar' : 'Nuevo movimiento'}
         </button>
       </div>
 
       {showForm && (
-        <form
-          onSubmit={handleCreate}
-          className="max-w-xl space-y-4 rounded-lg border border-zinc-200 bg-white p-4"
-        >
+        <form onSubmit={handleCreate} className="cmd-panel max-w-xl space-y-4 p-4">
           {error && (
-            <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
+            <p className="rounded-md bg-red-500/10 px-3 py-2 text-sm text-red-300">{error}</p>
           )}
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="flex flex-col gap-1 text-sm">
-              <span className="font-medium">Origen</span>
-              <select name="negocio_origen_id" required className="rounded-md border border-zinc-300 px-3 py-2">
+              <span className="font-medium text-[var(--cmd-text-muted)]">Origen</span>
+              <select name="negocio_origen_id" required className={fieldClass}>
                 {negociosOperativos.map((n) => (
-                  <option key={n.id} value={n.id}>{n.nombre}</option>
+                  <option key={n.id} value={n.id}>
+                    {n.nombre}
+                  </option>
                 ))}
               </select>
             </label>
             <label className="flex flex-col gap-1 text-sm">
-              <span className="font-medium">Destino</span>
-              <select name="negocio_destino_id" required className="rounded-md border border-zinc-300 px-3 py-2">
+              <span className="font-medium text-[var(--cmd-text-muted)]">Destino</span>
+              <select name="negocio_destino_id" required className={fieldClass}>
                 {negociosOperativos.map((n) => (
-                  <option key={n.id} value={n.id}>{n.nombre}</option>
+                  <option key={n.id} value={n.id}>
+                    {n.nombre}
+                  </option>
                 ))}
               </select>
             </label>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="flex flex-col gap-1 text-sm">
-              <span className="font-medium">Monto</span>
-              <input name="monto" type="number" min="0.01" step="0.01" required className="rounded-md border border-zinc-300 px-3 py-2" />
+              <span className="font-medium text-[var(--cmd-text-muted)]">Monto</span>
+              <input
+                name="monto"
+                type="number"
+                min="0.01"
+                step="0.01"
+                required
+                className={fieldClass}
+              />
             </label>
             <label className="flex flex-col gap-1 text-sm">
-              <span className="font-medium">Fecha</span>
-              <input name="fecha" type="date" required defaultValue={hoy} className="rounded-md border border-zinc-300 px-3 py-2" />
+              <span className="font-medium text-[var(--cmd-text-muted)]">Fecha</span>
+              <input name="fecha" type="date" required defaultValue={hoy} className={fieldClass} />
             </label>
           </div>
           <label className="flex flex-col gap-1 text-sm">
-            <span className="font-medium">Concepto</span>
-            <input name="concepto" required className="rounded-md border border-zinc-300 px-3 py-2" />
+            <span className="font-medium text-[var(--cmd-text-muted)]">Concepto</span>
+            <input name="concepto" required className={fieldClass} />
           </label>
           <label className="flex flex-col gap-1 text-sm">
-            <span className="font-medium">Observaciones</span>
-            <textarea name="observaciones" rows={2} className="rounded-md border border-zinc-300 px-3 py-2" />
+            <span className="font-medium text-[var(--cmd-text-muted)]">Observaciones</span>
+            <textarea name="observaciones" rows={2} className={fieldClass} />
           </label>
           <button
             type="submit"
             disabled={saving}
-            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+            className="rounded-md border border-[var(--cmd-border)] bg-[var(--cmd-panel-hover)] px-4 py-2 text-sm font-medium text-[var(--cmd-text)] disabled:opacity-50"
           >
             {saving ? 'Guardando…' : 'Registrar'}
           </button>
@@ -126,37 +138,64 @@ export function IntercompaniaTable({ movimientos, negocios, onRefresh }: Props) 
       )}
 
       {movimientos.length === 0 ? (
-        <p className="rounded-lg border border-dashed border-zinc-300 p-8 text-center text-zinc-500">
+        <p className="cmd-panel border-dashed p-8 text-center text-sm text-[var(--cmd-text-dim)]">
           No hay movimientos intercompañía registrados.
         </p>
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-zinc-200">
-          <table className="min-w-full divide-y divide-zinc-200 text-sm">
-            <thead className="bg-zinc-50">
+        <div className="cmd-panel overflow-x-auto">
+          <table className="cmd-table min-w-full text-sm">
+            <thead className="text-left">
               <tr>
-                <th className="px-4 py-3 text-left font-medium text-zinc-600">Origen → Destino</th>
-                <th className="px-4 py-3 text-right font-medium text-zinc-600">Monto</th>
-                <th className="px-4 py-3 text-left font-medium text-zinc-600">Fecha</th>
-                <th className="px-4 py-3 text-left font-medium text-zinc-600">Concepto</th>
-                <th className="px-4 py-3 text-left font-medium text-zinc-600">Estado</th>
+                <th className="px-4 py-3">Origen → Destino</th>
+                <th className="px-4 py-3 text-right">Monto</th>
+                <th className="px-4 py-3">Fecha</th>
+                <th className="px-4 py-3">Concepto</th>
+                <th className="px-4 py-3">Estado</th>
                 <th className="px-4 py-3" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-100 bg-white">
+            <tbody>
               {movimientos.map((m) => (
-                <tr key={m.id}>
+                <tr key={m.id} className="hover:bg-[var(--cmd-panel-hover)]">
                   <td className="px-4 py-3">
-                    {m.negocio_origen?.codigo ?? '?'} → {m.negocio_destino?.codigo ?? '?'}
+                    <span className="inline-flex flex-wrap items-center gap-2">
+                      {m.negocio_origen?.codigo ? (
+                        <NegocioRowLabel
+                          codigo={m.negocio_origen.codigo}
+                          nombre={m.negocio_origen.nombre ?? m.negocio_origen.codigo}
+                        />
+                      ) : (
+                        '?'
+                      )}
+                      <span className="text-[var(--cmd-text-dim)]">→</span>
+                      {m.negocio_destino?.codigo ? (
+                        <NegocioRowLabel
+                          codigo={m.negocio_destino.codigo}
+                          nombre={m.negocio_destino.nombre ?? m.negocio_destino.codigo}
+                        />
+                      ) : (
+                        '?'
+                      )}
+                    </span>
                   </td>
-                  <td className="px-4 py-3 text-right font-medium">{formatCOP(m.monto)}</td>
-                  <td className="px-4 py-3">{formatFecha(m.fecha)}</td>
-                  <td className="px-4 py-3 max-w-xs truncate" title={m.concepto}>{m.concepto}</td>
+                  <td className="px-4 py-3 text-right">
+                    <span className="font-label-mono text-[var(--cmd-text)]">
+                      {formatCOP(m.monto)}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-[var(--cmd-text-muted)]">{formatFecha(m.fecha)}</td>
+                  <td
+                    className="max-w-xs truncate px-4 py-3 text-[var(--cmd-text-muted)]"
+                    title={m.concepto}
+                  >
+                    {m.concepto}
+                  </td>
                   <td className="px-4 py-3">
                     <span
-                      className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
+                      className={`cmd-badge inline-flex rounded-full px-2 py-0.5 ${
                         m.estado === 'saldado'
-                          ? 'bg-emerald-100 text-emerald-800'
-                          : 'bg-amber-100 text-amber-800'
+                          ? 'bg-emerald-500/15 text-emerald-300'
+                          : 'bg-amber-500/15 text-amber-300'
                       }`}
                     >
                       {m.estado === 'saldado' ? 'Saldado' : 'Pendiente'}
@@ -168,7 +207,7 @@ export function IntercompaniaTable({ movimientos, negocios, onRefresh }: Props) 
                         type="button"
                         disabled={saldandoId === m.id}
                         onClick={() => handleSaldar(m.id)}
-                        className="text-sm font-medium text-blue-600 hover:text-blue-800 disabled:opacity-50"
+                        className="text-sm font-medium text-[var(--cmd-stgl)] hover:underline disabled:opacity-50"
                       >
                         Marcar saldado
                       </button>

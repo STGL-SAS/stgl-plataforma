@@ -27,10 +27,65 @@ export async function upsertClienteHardtech(input: {
   }
 }
 
-export async function deleteClienteHardtech(id: string) {
+export type DeleteClienteHardtechResult =
+  | { ok: true }
+  | { ok: false; message: string }
+
+export async function deleteClienteHardtech(
+  id: string,
+  nombre?: string
+): Promise<DeleteClienteHardtechResult> {
   const supabase = createAdminClient()
+  const label = nombre?.trim() || 'Este cliente'
+
+  const [ventasRes, mantRes] = await Promise.all([
+    supabase
+      .from('hardtech_ventas')
+      .select('id', { count: 'exact', head: true })
+      .eq('cliente_id', id),
+    supabase
+      .from('hardtech_mantenimientos')
+      .select('id', { count: 'exact', head: true })
+      .eq('cliente_id', id),
+  ])
+
+  if (ventasRes.error) throw new Error(ventasRes.error.message)
+  if (mantRes.error) throw new Error(mantRes.error.message)
+
+  const ventas = ventasRes.count ?? 0
+  const mantenimientos = mantRes.count ?? 0
+
+  if (ventas > 0 && mantenimientos > 0) {
+    return {
+      ok: false,
+      message: `«${label}» tiene ${ventas} venta(s) y ${mantenimientos} mantenimiento(s) asociados. Elimínalos antes de borrar el cliente.`,
+    }
+  }
+  if (ventas > 0) {
+    return {
+      ok: false,
+      message: `«${label}» tiene ${ventas} venta(s) asociada(s). Elimina esas ventas antes de borrar el cliente.`,
+    }
+  }
+  if (mantenimientos > 0) {
+    return {
+      ok: false,
+      message: `«${label}» tiene ${mantenimientos} mantenimiento(s) asociado(s). Elimínalos antes de borrar el cliente.`,
+    }
+  }
+
   const { error } = await supabase.from('clientes').delete().eq('id', id)
-  if (error) throw new Error(error.message)
+  if (error) {
+    if (error.code === '23503') {
+      return {
+        ok: false,
+        message: `«${label}» tiene registros asociados y no puede eliminarse.`,
+      }
+    }
+    throw new Error(error.message)
+  }
+
+  return { ok: true }
 }
 
 export type UpsertVentaInput = {
@@ -94,6 +149,20 @@ export async function upsertVentaHardtech(input: UpsertVentaInput) {
 
 export async function deleteVentaHardtech(id: string) {
   const supabase = createAdminClient()
+
+  const { data: compras } = await supabase
+    .from('hardtech_compras')
+    .select('transaccion_divisas_id')
+    .eq('venta_id', id)
+
+  const txIds = (compras ?? [])
+    .map((c) => c.transaccion_divisas_id as string | null)
+    .filter((txId): txId is string => Boolean(txId))
+
+  if (txIds.length > 0) {
+    await supabase.from('transacciones').delete().in('id', txIds)
+  }
+
   const { error } = await supabase.from('hardtech_ventas').delete().eq('id', id)
   if (error) throw new Error(error.message)
 }

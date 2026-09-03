@@ -7,6 +7,7 @@ import {
   crearGastoExtraHardtech,
   deleteCompraHardtech,
   deleteGastoExtraHardtech,
+  deleteVentaHardtech,
   upsertVentaHardtech,
 } from '../actions/mutations'
 import { GananciaVentaResumen } from '../components/GananciaVentaResumen'
@@ -88,6 +89,27 @@ export function VentaFormEtapas({
 
   const ventaId = venta?.id
   const etapa1Ok = Boolean(form.cliente_id && form.titulo.trim())
+
+  async function eliminarVenta() {
+    if (!ventaId || !venta) return
+    if (
+      !window.confirm(
+        `¿Eliminar la venta «${venta.titulo}»? Se borrarán también sus compras y gastos asociados. Esta acción no se puede deshacer.`
+      )
+    ) {
+      return
+    }
+    setLoading(true)
+    setError(null)
+    try {
+      await deleteVentaHardtech(ventaId)
+      router.push('/hardtech/ventas')
+      router.refresh()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'No se pudo eliminar la venta')
+      setLoading(false)
+    }
+  }
 
   async function guardarVenta(partial?: Partial<typeof form>) {
     setLoading(true)
@@ -196,6 +218,19 @@ export function VentaFormEtapas({
   return (
     <div className="space-y-8 max-w-3xl">
       {error && <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+
+      {ventaId && (
+        <div className="flex justify-end">
+          <button
+            type="button"
+            disabled={loading}
+            onClick={() => void eliminarVenta()}
+            className="inline-flex items-center gap-2 rounded-md border border-red-300 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
+          >
+            Eliminar venta
+          </button>
+        </div>
+      )}
 
       {/* Etapa 1: Cotización */}
       <section className="rounded-lg border border-zinc-200 bg-white p-6 space-y-4">

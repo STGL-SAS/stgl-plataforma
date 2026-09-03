@@ -23,6 +23,8 @@ interface Props {
 
 export function ClientesHardtech({ clientes }: Props) {
   const router = useRouter()
+  const [error, setError] = useState<string | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
   const [edit, setEdit] = useState<{
     id?: string
     nombre: string
@@ -35,18 +37,50 @@ export function ClientesHardtech({ clientes }: Props) {
   async function save(e: React.FormEvent) {
     e.preventDefault()
     if (!edit) return
-    await upsertClienteHardtech({
-      id: edit.id,
-      nombre: edit.nombre.trim(),
-      notas: edit.notas.trim() || null,
-      contacto: buildClienteContacto(edit),
-    })
-    setEdit(null)
-    router.refresh()
+    setError(null)
+    try {
+      await upsertClienteHardtech({
+        id: edit.id,
+        nombre: edit.nombre.trim(),
+        notas: edit.notas.trim() || null,
+        contacto: buildClienteContacto(edit),
+      })
+      setEdit(null)
+      router.refresh()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'No se pudo guardar el cliente')
+    }
+  }
+
+  async function eliminarCliente(c: Cliente) {
+    if (
+      !window.confirm(
+        `¿Eliminar a «${c.nombre}»? Esta acción no se puede deshacer.`
+      )
+    ) {
+      return
+    }
+    setDeletingId(c.id)
+    setError(null)
+    try {
+      const result = await deleteClienteHardtech(c.id, c.nombre)
+      if (!result.ok) {
+        setError(result.message)
+        return
+      }
+      router.refresh()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'No se pudo eliminar el cliente')
+    } finally {
+      setDeletingId(null)
+    }
   }
 
   return (
     <div className="space-y-4">
+      {error && (
+        <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
+      )}
       <button
         type="button"
         onClick={() => setEdit({ nombre: '', telefono: '', email: '', direccion: '', notas: '' })}
@@ -89,10 +123,11 @@ export function ClientesHardtech({ clientes }: Props) {
                     notas: c.notas ?? '',
                   })
                 }
-                onDelete={async () => {
-                  await deleteClienteHardtech(c.id)
-                  router.refresh()
-                }}
+                onDelete={
+                  deletingId === c.id
+                    ? undefined
+                    : () => void eliminarCliente(c)
+                }
               />
             </li>
           )
