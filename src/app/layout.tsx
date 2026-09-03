@@ -21,6 +21,10 @@ const jetbrains = JetBrains_Mono({
 export const metadata: Metadata = {
   title: 'STGL Plataforma',
   description: 'Plataforma interna de gestión STGL',
+  icons: {
+    icon: [{ url: '/icon.svg', type: 'image/svg+xml' }],
+    apple: [{ url: '/apple-icon.svg', type: 'image/svg+xml' }],
+  },
 }
 
 export default function RootLayout({ children }: LayoutProps<'/'>) {
