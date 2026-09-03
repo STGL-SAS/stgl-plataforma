@@ -18,7 +18,7 @@ export default async function HomePage() {
 
   if (error) {
     return (
-      <div className="mx-auto max-w-2xl px-5 py-10">
+      <div className="mx-auto max-w-2xl px-4 py-8 sm:px-5 sm:py-10">
         <p className="cmd-panel rounded-xl px-4 py-3 text-sm text-[var(--cmd-decline)]">{error}</p>
         <p className="mt-3 text-sm text-[var(--cmd-text-muted)]">
           Tras <code className="text-xs">supabase db push</code> de las migraciones de dashboard, este

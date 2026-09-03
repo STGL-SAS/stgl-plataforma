@@ -33,18 +33,20 @@ export function CommandDashboard({ data }: { data: DashboardData }) {
   const comparisonLabel = growthComparisonLabel(range.preset)
 
   return (
-    <div className="mx-auto max-w-6xl px-5 py-6">
-      <header className="mb-4 flex items-start justify-between gap-4">
+    <div className="mx-auto max-w-6xl px-4 py-4 sm:px-5 sm:py-6">
+      <header className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
         <div className="min-w-0 flex-1">
-          <h1 className="text-xl font-semibold text-[var(--cmd-text)]">Inicio</h1>
-          <p className="mt-0.5 text-sm text-[var(--cmd-text-muted)]">
+          <h1 className="text-lg font-semibold text-[var(--cmd-text)] sm:text-xl">Inicio</h1>
+          <p className="mt-0.5 text-xs text-[var(--cmd-text-muted)] sm:text-sm">
             Dashboard general · HYDREX · HARDTECH · HANGARC · VirtualWaiter
           </p>
           <div className="mt-3">
             <DashboardDateFilterControl value={dateFilter} onChange={setDateFilter} />
           </div>
         </div>
-        <AlertsBellButton count={alertCount} items={data.liveFeed} />
+        <div className="self-end sm:self-auto">
+          <AlertsBellButton count={alertCount} items={data.liveFeed} />
+        </div>
       </header>
 
       <div className="space-y-5">
@@ -107,7 +109,7 @@ function ConsolidatedNavCard({
   return (
     <CommandPanel className="flex flex-col justify-between">
       <p className="text-sm text-[var(--cmd-text-muted)]">Balance consolidado STGL</p>
-      <p className="font-display mt-2 text-4xl font-semibold tracking-tight text-[var(--cmd-text)]">
+      <p className="font-display mt-2 text-3xl font-semibold tracking-tight text-[var(--cmd-text)] sm:text-4xl">
         {formatCOP(total)}
       </p>
       <p

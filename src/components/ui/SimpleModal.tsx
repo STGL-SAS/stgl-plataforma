@@ -35,7 +35,7 @@ export function SimpleModal({
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-[12vh] sm:items-center sm:pt-4">
+    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-start sm:p-4 sm:pt-[12vh]">
       <button
         type="button"
         className="absolute inset-0 bg-black/55"
@@ -47,7 +47,7 @@ export function SimpleModal({
         aria-modal="true"
         aria-labelledby={titleId}
         className={cn(
-          'relative z-10 w-full max-w-md rounded-xl border border-[var(--cmd-border)] bg-[var(--cmd-panel)] shadow-xl',
+          'relative z-10 w-full max-w-md rounded-t-xl border border-[var(--cmd-border)] bg-[var(--cmd-panel)] shadow-xl sm:rounded-xl',
           className
         )}
       >
@@ -64,7 +64,7 @@ export function SimpleModal({
             <X className="h-4 w-4" />
           </button>
         </div>
-        <div className="max-h-[min(60vh,420px)] overflow-y-auto p-4">{children}</div>
+        <div className="max-h-[min(70vh,420px)] overflow-y-auto p-4 sm:max-h-[min(60vh,420px)]">{children}</div>
       </div>
     </div>
   )

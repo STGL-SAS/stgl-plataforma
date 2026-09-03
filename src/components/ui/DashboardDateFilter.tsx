@@ -27,23 +27,25 @@ export function DashboardDateFilterControl({
   const today = new Date().toISOString().slice(0, 10)
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <div className="flex flex-wrap rounded-lg border border-[var(--cmd-border)] p-0.5">
-        {PRESETS.map((p) => (
-          <button
-            key={p.id}
-            type="button"
-            onClick={() => onChange({ ...value, preset: p.id })}
-            className={cn(
-              'rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
-              value.preset === p.id
-                ? 'bg-[var(--cmd-panel-hover)] text-[var(--cmd-text)]'
-                : 'text-[var(--cmd-text-muted)] hover:text-[var(--cmd-text)]'
-            )}
-          >
-            {p.label}
-          </button>
-        ))}
+    <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+      <div className="cmd-module-nav-scroll -mx-1 overflow-x-auto px-1 sm:mx-0 sm:overflow-visible sm:px-0">
+        <div className="flex w-max flex-nowrap rounded-lg border border-[var(--cmd-border)] p-0.5 sm:w-auto sm:flex-wrap">
+          {PRESETS.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              onClick={() => onChange({ ...value, preset: p.id })}
+              className={cn(
+                'shrink-0 rounded-md px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-colors',
+                value.preset === p.id
+                  ? 'bg-[var(--cmd-panel-hover)] text-[var(--cmd-text)]'
+                  : 'text-[var(--cmd-text-muted)] hover:text-[var(--cmd-text)]'
+              )}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {value.preset === 'custom' && (

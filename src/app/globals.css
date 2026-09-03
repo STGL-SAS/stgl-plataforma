@@ -202,6 +202,15 @@ body {
 }
 
 /* Module nav underline tabs */
+.cmd-module-nav-scroll {
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.cmd-module-nav-scroll::-webkit-scrollbar {
+  display: none;
+}
+
 .cmd-module-nav a {
   position: relative;
   padding: 0.5rem 0.75rem;
@@ -210,6 +219,7 @@ body {
   color: var(--cmd-text-muted);
   border-radius: 0.25rem;
   transition: color 0.15s ease;
+  white-space: nowrap;
 }
 
 .cmd-module-nav a:hover {
@@ -248,6 +258,19 @@ body {
 
 .cmd-table td {
   border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+@media (max-width: 639px) {
+  .cmd-table th,
+  .cmd-table td {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+    font-size: 0.8125rem;
+  }
+
+  .command-main :where(.overflow-x-auto) {
+    -webkit-overflow-scrolling: touch;
+  }
 }
 
 /* Terminal cursor blink */
