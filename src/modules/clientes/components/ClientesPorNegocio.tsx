@@ -12,6 +12,7 @@ import {
   getClientesByNegocio,
   upsertClienteNegocio,
 } from '../lib/actions'
+import { RowActions } from '@/components/ui/RowActions'
 
 type NegocioOption = { id: string; codigo: string; nombre: string }
 
@@ -188,33 +189,22 @@ export function ClientesPorNegocio({ negocios, initialNegocioId }: Props) {
                   <p className="text-sm text-zinc-500">{resumenContactoCliente(contacto)}</p>
                   {c.notas && <p className="mt-1 text-xs text-zinc-500">{c.notas}</p>}
                 </div>
-                <div className="flex gap-2 text-xs">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setEdit({
-                        id: c.id,
-                        nombre: c.nombre,
-                        telefono: contacto.telefono,
-                        email: contacto.email,
-                        direccion: contacto.direccion,
-                        notas: c.notas ?? '',
-                      })
-                    }
-                  >
-                    Editar
-                  </button>
-                  <button
-                    type="button"
-                    className="text-red-600"
-                    onClick={async () => {
-                      await deleteClienteNegocio(c.id)
-                      await load(negocioId)
-                    }}
-                  >
-                    Eliminar
-                  </button>
-                </div>
+                <RowActions
+                  onEdit={() =>
+                    setEdit({
+                      id: c.id,
+                      nombre: c.nombre,
+                      telefono: contacto.telefono,
+                      email: contacto.email,
+                      direccion: contacto.direccion,
+                      notas: c.notas ?? '',
+                    })
+                  }
+                  onDelete={async () => {
+                    await deleteClienteNegocio(c.id)
+                    await load(negocioId)
+                  }}
+                />
               </li>
             )
           })}

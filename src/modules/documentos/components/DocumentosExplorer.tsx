@@ -15,6 +15,13 @@ interface Props {
   categoriasIniciales: string[]
   initialError?: string | null
   justConnected?: boolean
+  lockedNegocioId?: string
+  initialCategoria?: string
+  variant?: 'light' | 'dark'
+  /** Oculta acciones de importación OneDrive (vista embebida en negocio). */
+  compact?: boolean
+  /** Restringe la navegación a la carpeta raíz del negocio en OneDrive. */
+  soloCarpetaNegocio?: boolean
 }
 
 function navRootForNegocio(
@@ -29,6 +36,29 @@ function navRootForNegocio(
   return { id: null, nombre: n?.nombre ?? 'Inicio' }
 }
 
+function lockedInitialState(
+  negocios: NegocioOption[],
+  lockedNegocioId: string,
+  initialCategoria: string
+) {
+  const root = navRootForNegocio(negocios, lockedNegocioId)
+  const neg = negocios.find((x) => x.id === lockedNegocioId)
+  const defaultFormCat = neg?.codigo === 'STGL' ? 'STGL / general' : 'general'
+  return {
+    negocioId: lockedNegocioId,
+    parentId: root.id,
+    crumbs: [root] as BreadcrumbItem[],
+    categoria: initialCategoria,
+    folderForm: { nombre: '', negocio_id: lockedNegocioId, categoria: defaultFormCat },
+    uploadForm: {
+      negocio_id: lockedNegocioId,
+      categoria: defaultFormCat,
+      tipo_documento: '',
+      file: null as File | null,
+    },
+  }
+}
+
 export function DocumentosExplorer({
   negocios: negociosIniciales,
   connected,
@@ -36,18 +66,31 @@ export function DocumentosExplorer({
   categoriasIniciales,
   initialError,
   justConnected,
+  lockedNegocioId,
+  initialCategoria = '',
+  variant = 'light',
+  compact = false,
+  soloCarpetaNegocio = false,
 }: Props) {
+  const isDark = variant === 'dark'
+  const wrapClass = isDark ? 'documentos-explorer-dark' : undefined
+  const lockedInit = lockedNegocioId
+    ? lockedInitialState(negociosIniciales, lockedNegocioId, initialCategoria)
+    : null
+
   const [negocios, setNegocios] = useState(negociosIniciales)
   const [docs, setDocs] = useState<DocumentoRow[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(initialError ?? null)
   const [banner, setBanner] = useState<string | null>(null)
-  const [negocioId, setNegocioId] = useState('')
-  const [categoria, setCategoria] = useState('')
+  const [negocioId, setNegocioId] = useState(lockedInit?.negocioId ?? '')
+  const [categoria, setCategoria] = useState(lockedInit?.categoria ?? '')
   const [q, setQ] = useState('')
   const [qApplied, setQApplied] = useState('')
-  const [parentId, setParentId] = useState<string | null>(null)
-  const [crumbs, setCrumbs] = useState<BreadcrumbItem[]>([{ id: null, nombre: 'Inicio' }])
+  const [parentId, setParentId] = useState<string | null>(lockedInit?.parentId ?? null)
+  const [crumbs, setCrumbs] = useState<BreadcrumbItem[]>(
+    lockedInit?.crumbs ?? [{ id: null, nombre: 'Inicio' }]
+  )
   const [categorias, setCategorias] = useState(categoriasIniciales)
 
   const [showUpload, setShowUpload] = useState(false)
@@ -55,17 +98,23 @@ export function DocumentosExplorer({
   const [busy, setBusy] = useState(false)
   const [importing, setImporting] = useState(false)
 
-  const [uploadForm, setUploadForm] = useState({
-    negocio_id: '',
-    categoria: 'general',
-    tipo_documento: '',
-    file: null as File | null,
-  })
-  const [folderForm, setFolderForm] = useState({
-    nombre: '',
-    negocio_id: '',
-    categoria: 'general',
-  })
+  const [uploadForm, setUploadForm] = useState(
+    lockedInit?.uploadForm ?? {
+      negocio_id: '',
+      categoria: 'general',
+      tipo_documento: '',
+      file: null as File | null,
+    }
+  )
+  const [folderForm, setFolderForm] = useState(
+    lockedInit?.folderForm ?? {
+      nombre: '',
+      negocio_id: '',
+      categoria: 'general',
+    }
+  )
+
+  const effectiveNegocioId = lockedNegocioId ?? negocioId
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -74,7 +123,7 @@ export function DocumentosExplorer({
       const params = new URLSearchParams()
       if (qApplied) params.set('q', qApplied)
       else params.set('parent', parentId ?? 'root')
-      if (negocioId) params.set('negocio', negocioId)
+      if (effectiveNegocioId) params.set('negocio', effectiveNegocioId)
       if (categoria) params.set('categoria', categoria)
 
       const res = await fetch(`/api/documentos?${params}`)
@@ -90,13 +139,14 @@ export function DocumentosExplorer({
     } finally {
       setLoading(false)
     }
-  }, [parentId, negocioId, categoria, qApplied, categoriasIniciales])
+  }, [parentId, effectiveNegocioId, categoria, qApplied, categoriasIniciales])
 
   useEffect(() => {
     void load()
   }, [load])
 
   function applyNegocioFilter(id: string) {
+    if (lockedNegocioId) return
     setNegocioId(id)
     setQ('')
     setQApplied('')
@@ -239,6 +289,7 @@ export function DocumentosExplorer({
   }, [negocioDefault, folderForm.negocio_id, uploadForm.negocio_id])
 
   return (
+    <div className={wrapClass}>
     <div className="space-y-4">
       {!connected && (
         <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
@@ -270,6 +321,12 @@ export function DocumentosExplorer({
       )}
 
       <div className="flex flex-wrap gap-3 items-end">
+        {soloCarpetaNegocio && effectiveNegocioId && (
+          <p className="w-full text-xs text-[var(--cmd-text-dim)]">
+            Carpeta del negocio en OneDrive
+          </p>
+        )}
+        {!lockedNegocioId && (
         <label className="flex flex-col gap-1 text-sm">
           <span className="font-medium">Negocio</span>
           <select
@@ -285,6 +342,7 @@ export function DocumentosExplorer({
             ))}
           </select>
         </label>
+        )}
         <label className="flex flex-col gap-1 text-sm">
           <span className="font-medium">Categoría</span>
           <select
@@ -333,7 +391,7 @@ export function DocumentosExplorer({
             )}
           </div>
         </label>
-        {canImport && (
+        {canImport && !compact && (
           <button
             type="button"
             disabled={!connected || importing}
@@ -397,7 +455,7 @@ export function DocumentosExplorer({
             <tr>
               <th className="px-4 py-3">Nombre</th>
               <th className="px-4 py-3">Categoría</th>
-              <th className="px-4 py-3">Negocio</th>
+              {!soloCarpetaNegocio && <th className="px-4 py-3">Negocio</th>}
               <th className="px-4 py-3">Fecha</th>
               <th className="px-4 py-3" />
             </tr>
@@ -405,14 +463,14 @@ export function DocumentosExplorer({
           <tbody>
             {loading && (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-zinc-500">
+                <td colSpan={soloCarpetaNegocio ? 4 : 5} className="px-4 py-8 text-center text-zinc-500">
                   Cargando…
                 </td>
               </tr>
             )}
             {!loading && docs.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-zinc-500">
+                <td colSpan={soloCarpetaNegocio ? 4 : 5} className="px-4 py-8 text-center text-zinc-500">
                   No hay documentos aquí.
                 </td>
               </tr>
@@ -445,11 +503,13 @@ export function DocumentosExplorer({
                     )}
                   </td>
                   <td className="px-4 py-3 capitalize">{d.categoria}</td>
+                  {!soloCarpetaNegocio && (
                   <td className="px-4 py-3">
                     <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-700">
                       {d.negocios?.nombre ?? '—'}
                     </span>
                   </td>
+                  )}
                   <td className="px-4 py-3">{d.fecha}</td>
                   <td className="px-4 py-3 text-right">
                     {d.onedrive_web_url && (
@@ -485,6 +545,7 @@ export function DocumentosExplorer({
                 onChange={(e) => setFolderForm({ ...folderForm, nombre: e.target.value })}
               />
             </label>
+            {!lockedNegocioId && (
             <label className="flex flex-col gap-1">
               <span className="font-medium">Negocio</span>
               <select
@@ -500,6 +561,7 @@ export function DocumentosExplorer({
                 ))}
               </select>
             </label>
+            )}
             <label className="flex flex-col gap-1">
               <span className="font-medium">Categoría</span>
               <input
@@ -544,6 +606,7 @@ export function DocumentosExplorer({
               />
               <span className="text-xs text-zinc-500">Máximo ~4 MB por ahora</span>
             </label>
+            {!lockedNegocioId && (
             <label className="flex flex-col gap-1">
               <span className="font-medium">Negocio</span>
               <select
@@ -559,6 +622,7 @@ export function DocumentosExplorer({
                 ))}
               </select>
             </label>
+            )}
             <label className="flex flex-col gap-1">
               <span className="font-medium">Categoría</span>
               <input
@@ -592,6 +656,7 @@ export function DocumentosExplorer({
           </form>
         </div>
       )}
+    </div>
     </div>
   )
 }

@@ -4,6 +4,7 @@ import { useMemo } from 'react'
 import type { HydrexInsumo, HydrexProducto } from '../lib/tipos'
 import { formatInsumoLabel, formatProductoLabel } from '../lib/format-receta'
 import { NumberInput } from '@/components/NumberInput'
+import { DeleteIconButton } from '@/components/ui/IconAction'
 
 export type RecetaLineaTipo = 'insumo' | 'producto'
 
@@ -180,15 +181,11 @@ export function ProductoRecetaEditor({
                   className="text-sm"
                 />
               </label>
-              <button
-                type="button"
-                onClick={() => removeLinea(index)}
+              <DeleteIconButton
+                label="Quitar línea"
                 disabled={lineas.length <= 1}
-                className="rounded-md border px-3 py-2 text-sm text-red-600 disabled:opacity-40"
-                title="Quitar línea"
-              >
-                Quitar
-              </button>
+                onClick={() => removeLinea(index)}
+              />
             </li>
           ))}
         </ul>

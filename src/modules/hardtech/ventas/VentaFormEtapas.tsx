@@ -10,6 +10,7 @@ import {
   upsertVentaHardtech,
 } from '../actions/mutations'
 import { GananciaVentaResumen } from '../components/GananciaVentaResumen'
+import { DeleteIconButton } from '@/components/ui/IconAction'
 import type {
   HardtechCompra,
   HardtechEstadoVenta,
@@ -295,7 +296,12 @@ export function VentaFormEtapas({
                 {comprasIniciales.map((c) => (
                   <li key={c.id} className="flex justify-between border-b pb-2">
                     <span>{c.lugar_compra} — {c.moneda} {c.monto} ({c.monto_cop_equivalente.toLocaleString('es-CO')} COP)</span>
-                    <button type="button" className="text-red-600 text-xs" onClick={async () => { await deleteCompraHardtech(c.id); router.refresh() }}>Eliminar</button>
+                    <DeleteIconButton
+                      onClick={async () => {
+                        await deleteCompraHardtech(c.id)
+                        router.refresh()
+                      }}
+                    />
                   </li>
                 ))}
               </ul>
@@ -328,7 +334,12 @@ export function VentaFormEtapas({
             {gastosIniciales.map((g) => (
               <div key={g.id} className="flex justify-between text-sm border-b pb-2">
                 <span>{g.tipo}: {g.monto_cop_equivalente.toLocaleString('es-CO')} COP</span>
-                <button type="button" className="text-red-600 text-xs" onClick={async () => { await deleteGastoExtraHardtech(g.id); router.refresh() }}>Eliminar</button>
+                <DeleteIconButton
+                  onClick={async () => {
+                    await deleteGastoExtraHardtech(g.id)
+                    router.refresh()
+                  }}
+                />
               </div>
             ))}
             <form onSubmit={agregarGasto} className="grid gap-3 sm:grid-cols-2 text-sm">

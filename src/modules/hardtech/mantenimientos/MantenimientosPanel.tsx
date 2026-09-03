@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { deleteMantenimientoHardtech, upsertMantenimientoHardtech } from '../actions/mutations'
+import { RowActions } from '@/components/ui/RowActions'
 import { calcularGananciaMantenimiento, formatCOP } from '../motor-calculo'
 import type { HardtechMantenimiento } from '../lib/tipos'
 
@@ -148,8 +149,13 @@ export function MantenimientosPanel({ mantenimientos, clientes }: Props) {
                   <td className="px-4 py-3">{m.fecha}</td>
                   <td className="px-4 py-3 text-right">{formatCOP(g.ganancia)}</td>
                   <td className="px-4 py-3">
-                    <button type="button" className="text-xs text-zinc-600 mr-2" onClick={() => openEdit(m)}>Editar</button>
-                    <button type="button" className="text-xs text-red-600" onClick={async () => { await deleteMantenimientoHardtech(m.id); router.refresh() }}>Eliminar</button>
+                    <RowActions
+                      onEdit={() => openEdit(m)}
+                      onDelete={async () => {
+                        await deleteMantenimientoHardtech(m.id)
+                        router.refresh()
+                      }}
+                    />
                   </td>
                 </tr>
               )

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { RowActions } from '@/components/ui/RowActions'
 import { formatCOP } from '../motor-calculo'
 import type { SocioOption } from './GastosFijosLista'
 
@@ -18,6 +19,7 @@ interface Props {
   gastos: GastoOcasionalRow[]
   socios: SocioOption[]
   mostrarPagoPersonal?: boolean
+  variant?: 'light' | 'dark'
   onSave: (input: {
     id?: string
     concepto: string
@@ -43,10 +45,31 @@ export function GastosOcasionalesLista({
   gastos,
   socios,
   mostrarPagoPersonal = true,
+  variant = 'light',
   onSave,
   onDelete,
   onRefresh,
 }: Props) {
+  const isDark = variant === 'dark'
+  const btnPrimary = isDark
+    ? 'rounded-md border border-[var(--cmd-border)] bg-[var(--cmd-panel-hover)] px-4 py-2 text-sm text-[var(--cmd-text)] hover:bg-[var(--cmd-panel)]'
+    : 'rounded-md bg-zinc-900 px-4 py-2 text-sm text-white'
+  const formClass = isDark
+    ? 'rounded-lg border border-[var(--cmd-border)] bg-[var(--cmd-panel)] p-6 grid gap-3 sm:grid-cols-2 max-w-2xl text-sm text-[var(--cmd-text)]'
+    : 'rounded-lg border bg-white p-6 grid gap-3 sm:grid-cols-2 max-w-2xl text-sm'
+  const fieldClass = isDark
+    ? 'rounded-md border border-[var(--cmd-border)] bg-[var(--cmd-bg)] px-3 py-2 text-[var(--cmd-text)]'
+    : 'rounded-md border px-3 py-2'
+  const tableWrap = isDark
+    ? 'overflow-x-auto rounded-lg border border-[var(--cmd-border)]'
+    : 'overflow-x-auto rounded-lg border bg-white'
+  const theadClass = isDark
+    ? 'border-b border-[var(--cmd-border)] bg-black/20 text-left text-[var(--cmd-text-muted)]'
+    : 'border-b bg-zinc-50 text-left text-zinc-600'
+  const rowClass = isDark ? 'border-b border-[var(--cmd-border)]' : 'border-b'
+  const emptyClass = isDark
+    ? 'px-4 py-8 text-center text-[var(--cmd-text-dim)]'
+    : 'px-4 py-8 text-center text-zinc-500'
   const [edit, setEdit] = useState(empty())
   const [show, setShow] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -83,22 +106,19 @@ export function GastosOcasionalesLista({
           setEdit(empty())
           setShow(true)
         }}
-        className="rounded-md bg-zinc-900 px-4 py-2 text-sm text-white"
+        className={btnPrimary}
       >
         + Gasto ocasional
       </button>
 
       {show && (
-        <form
-          onSubmit={submit}
-          className="rounded-lg border bg-white p-6 grid gap-3 sm:grid-cols-2 max-w-2xl text-sm"
-        >
-          {error && <p className="sm:col-span-2 text-red-700">{error}</p>}
+        <form onSubmit={submit} className={formClass}>
+          {error && <p className={`sm:col-span-2 ${isDark ? 'text-[var(--cmd-decline)]' : 'text-red-700'}`}>{error}</p>}
           <label className="flex flex-col gap-1 sm:col-span-2">
             <span className="font-medium">Concepto</span>
             <input
               required
-              className="rounded-md border px-3 py-2"
+              className={fieldClass}
               value={edit.concepto}
               onChange={(e) => setEdit({ ...edit, concepto: e.target.value })}
             />
@@ -110,7 +130,7 @@ export function GastosOcasionalesLista({
               type="number"
               min="0"
               step="0.01"
-              className="rounded-md border px-3 py-2"
+              className={fieldClass}
               value={edit.monto}
               onChange={(e) => setEdit({ ...edit, monto: e.target.value })}
             />
@@ -119,7 +139,7 @@ export function GastosOcasionalesLista({
             <span className="font-medium">Fecha</span>
             <input
               type="date"
-              className="rounded-md border px-3 py-2"
+              className={fieldClass}
               value={edit.fecha}
               onChange={(e) => setEdit({ ...edit, fecha: e.target.value })}
             />
@@ -127,7 +147,7 @@ export function GastosOcasionalesLista({
           <label className="flex flex-col gap-1 sm:col-span-2">
             <span className="font-medium">Comprobante (link)</span>
             <input
-              className="rounded-md border px-3 py-2"
+              className={fieldClass}
               placeholder="https://…"
               value={edit.comprobante}
               onChange={(e) => setEdit({ ...edit, comprobante: e.target.value })}
@@ -137,7 +157,7 @@ export function GastosOcasionalesLista({
             <label className="flex flex-col gap-1 sm:col-span-2">
               <span className="font-medium">Pagado con plata personal de</span>
               <select
-                className="rounded-md border px-3 py-2"
+                className={fieldClass}
                 value={edit.pagado_por_socio_id}
                 onChange={(e) => setEdit({ ...edit, pagado_por_socio_id: e.target.value })}
               >
@@ -151,23 +171,23 @@ export function GastosOcasionalesLista({
             </label>
           )}
           <div className="flex gap-2 sm:col-span-2">
-            <button
-              type="submit"
-              disabled={loading}
-              className="rounded-md bg-zinc-900 px-4 py-2 text-white disabled:opacity-50"
-            >
+            <button type="submit" disabled={loading} className={`${btnPrimary} disabled:opacity-50`}>
               Guardar
             </button>
-            <button type="button" onClick={() => setShow(false)} className="text-zinc-600">
+            <button
+              type="button"
+              onClick={() => setShow(false)}
+              className={isDark ? 'text-[var(--cmd-text-muted)]' : 'text-zinc-600'}
+            >
               Cancelar
             </button>
           </div>
         </form>
       )}
 
-      <div className="overflow-x-auto rounded-lg border bg-white">
+      <div className={tableWrap}>
         <table className="min-w-full text-sm">
-          <thead className="border-b bg-zinc-50 text-left text-zinc-600">
+          <thead className={theadClass}>
             <tr>
               <th className="px-4 py-3">Fecha</th>
               <th className="px-4 py-3">Concepto</th>
@@ -178,18 +198,16 @@ export function GastosOcasionalesLista({
           </thead>
           <tbody>
             {gastos.map((g) => (
-              <tr key={g.id} className="border-b">
+              <tr key={g.id} className={rowClass}>
                 <td className="px-4 py-3">{g.fecha}</td>
-                <td className="px-4 py-3 font-medium">{g.concepto}</td>
+                <td className={`px-4 py-3 font-medium ${isDark ? 'text-[var(--cmd-text)]' : ''}`}>{g.concepto}</td>
                 <td className="px-4 py-3 text-right">{formatCOP(g.monto)}</td>
                 {mostrarPagoPersonal && (
-                  <td className="px-4 py-3 text-zinc-600">{g.socio_nombre ?? '—'}</td>
+                  <td className={`px-4 py-3 ${isDark ? 'text-[var(--cmd-text-muted)]' : 'text-zinc-600'}`}>{g.socio_nombre ?? '—'}</td>
                 )}
-                <td className="px-4 py-3 space-x-2">
-                  <button
-                    type="button"
-                    className="text-xs text-zinc-600"
-                    onClick={() => {
+                <td className="px-4 py-3">
+                  <RowActions
+                    onEdit={() => {
                       setEdit({
                         id: g.id,
                         concepto: g.concepto,
@@ -200,28 +218,17 @@ export function GastosOcasionalesLista({
                       })
                       setShow(true)
                     }}
-                  >
-                    Editar
-                  </button>
-                  <button
-                    type="button"
-                    className="text-xs text-red-600"
-                    onClick={async () => {
+                    onDelete={async () => {
                       await onDelete(g.id)
                       onRefresh()
                     }}
-                  >
-                    Eliminar
-                  </button>
+                  />
                 </td>
               </tr>
             ))}
             {gastos.length === 0 && (
               <tr>
-                <td
-                  colSpan={mostrarPagoPersonal ? 5 : 4}
-                  className="px-4 py-8 text-center text-zinc-500"
-                >
+                <td colSpan={mostrarPagoPersonal ? 5 : 4} className={emptyClass}>
                   Sin gastos ocasionales.
                 </td>
               </tr>

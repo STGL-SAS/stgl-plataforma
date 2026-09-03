@@ -1,6 +1,8 @@
 'use client'
 
+import { X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { cn } from '@/lib/cn'
 import { DocumentoUploadForm } from '@/modules/documentos/components/DocumentoUploadForm'
 
 type DocHit = {
@@ -15,7 +17,6 @@ interface DocumentoPickerProps {
   onChange: (documentoIds: string[]) => void
 }
 
-/** Usa el endpoint de búsqueda/listado del módulo Documentos (`GET /api/documentos`). */
 async function fetchDocumentos(negocioId: string, q: string): Promise<DocHit[]> {
   const params = new URLSearchParams({ negocio: negocioId })
   if (q.trim()) params.set('q', q.trim())
@@ -36,6 +37,9 @@ async function fetchDocumentos(negocioId: string, q: string): Promise<DocHit[]> 
     .filter((d) => !d.es_carpeta)
     .map((d) => ({ id: d.id, nombre: d.nombre, categoria: d.categoria }))
 }
+
+const fieldClass =
+  'rounded-md border border-[var(--cmd-border)] bg-[var(--cmd-bg)] px-3 py-2 text-[var(--cmd-text)]'
 
 export function DocumentoPicker({
   negocioId,
@@ -110,34 +114,37 @@ export function DocumentoPicker({
   }
 
   return (
-    <div className="space-y-3 rounded-md border border-zinc-200 bg-zinc-50/80 p-3 text-sm">
-      <p className="font-medium text-zinc-900">Documentos</p>
+    <div className="space-y-3 rounded-md border border-[var(--cmd-border)] bg-[var(--cmd-bg)] p-3 text-sm">
+      <p className="font-medium text-[var(--cmd-text)]">Documentos</p>
       {!negocioId && (
-        <p className="text-xs text-zinc-500">Elige un negocio para buscar o subir documentos.</p>
+        <p className="text-xs text-[var(--cmd-text-dim)]">
+          Elige un negocio para buscar o subir documentos.
+        </p>
       )}
 
-      <div className="flex rounded-md border border-zinc-300 bg-white text-sm">
-        <button
-          type="button"
-          className={`flex-1 px-3 py-1.5 ${tab === 'buscar' ? 'bg-zinc-900 text-white' : ''}`}
-          onClick={() => setTab('buscar')}
-        >
-          Buscar
-        </button>
-        <button
-          type="button"
-          className={`flex-1 px-3 py-1.5 ${tab === 'subir' ? 'bg-zinc-900 text-white' : ''}`}
-          onClick={() => setTab('subir')}
-        >
-          Subir nuevo
-        </button>
+      <div className="flex rounded-md border border-[var(--cmd-border)] text-sm">
+        {(['buscar', 'subir'] as const).map((t) => (
+          <button
+            key={t}
+            type="button"
+            className={cn(
+              'flex-1 px-3 py-1.5 capitalize transition-colors',
+              tab === t
+                ? 'bg-[var(--cmd-panel-hover)] text-[var(--cmd-text)]'
+                : 'text-[var(--cmd-text-muted)] hover:text-[var(--cmd-text)]'
+            )}
+            onClick={() => setTab(t)}
+          >
+            {t === 'subir' ? 'Subir nuevo' : 'Buscar'}
+          </button>
+        ))}
       </div>
 
       {tab === 'buscar' && (
         <div className="space-y-2">
           <div className="flex gap-2">
             <input
-              className="flex-1 rounded-md border border-zinc-300 px-3 py-2"
+              className={cn(fieldClass, 'flex-1')}
               placeholder="Nombre o categoría…"
               value={q}
               onChange={(e) => setQ(e.target.value)}
@@ -150,17 +157,17 @@ export function DocumentoPicker({
             />
             <button
               type="button"
-              className="rounded-md border border-zinc-300 px-3 py-2"
+              className="rounded-md border border-[var(--cmd-border)] bg-[var(--cmd-panel)] px-3 py-2 text-[var(--cmd-text-muted)] hover:text-[var(--cmd-text)]"
               onClick={() => setQApplied(q.trim())}
             >
               Buscar
             </button>
           </div>
-          {loading && <p className="text-zinc-500">Buscando…</p>}
-          {error && <p className="text-red-600">{error}</p>}
-          <ul className="max-h-40 space-y-1 overflow-y-auto rounded-md border border-zinc-200 bg-white p-2">
+          {loading && <p className="text-[var(--cmd-text-dim)]">Buscando…</p>}
+          {error && <p className="text-[var(--cmd-decline)]">{error}</p>}
+          <ul className="max-h-40 space-y-1 overflow-y-auto rounded-md border border-[var(--cmd-border)] bg-[var(--cmd-panel)] p-2">
             {!loading && hits.length === 0 && (
-              <li className="text-xs text-zinc-500">Sin resultados</li>
+              <li className="text-xs text-[var(--cmd-text-dim)]">Sin resultados</li>
             )}
             {hits.map((d) => {
               const already = yaSet.has(d.id)
@@ -168,9 +175,10 @@ export function DocumentoPicker({
               return (
                 <li key={d.id}>
                   <label
-                    className={`flex cursor-pointer items-start gap-2 rounded px-1 py-1 ${
-                      already ? 'opacity-60' : 'hover:bg-zinc-50'
-                    }`}
+                    className={cn(
+                      'flex cursor-pointer items-start gap-2 rounded px-1 py-1',
+                      already ? 'opacity-60' : 'hover:bg-[var(--cmd-panel-hover)]'
+                    )}
                   >
                     <input
                       type="checkbox"
@@ -179,11 +187,11 @@ export function DocumentoPicker({
                       disabled={already}
                       onChange={() => toggle(d.id, d.nombre)}
                     />
-                    <span>
+                    <span className="text-[var(--cmd-text)]">
                       <span className="font-medium">{d.nombre}</span>
-                      <span className="ml-1 text-xs text-zinc-500">{d.categoria}</span>
+                      <span className="ml-1 text-xs text-[var(--cmd-text-muted)]">{d.categoria}</span>
                       {already && (
-                        <span className="ml-1 text-xs text-zinc-500">(ya adjunto)</span>
+                        <span className="ml-1 text-xs text-[var(--cmd-text-dim)]">(ya adjunto)</span>
                       )}
                     </span>
                   </label>
@@ -207,20 +215,20 @@ export function DocumentoPicker({
       )}
 
       {selectedIds.length > 0 && (
-        <div className="flex flex-wrap gap-2 border-t border-zinc-200 pt-3">
+        <div className="flex flex-wrap gap-2 border-t border-[var(--cmd-border)] pt-3">
           {selectedIds.map((id) => (
             <span
               key={id}
-              className="inline-flex items-center gap-1 rounded-full bg-zinc-200 px-2.5 py-1 text-xs text-zinc-800"
+              className="inline-flex items-center gap-1 rounded-full border border-[var(--cmd-border)] bg-[var(--cmd-panel-hover)] px-2.5 py-1 text-xs text-[var(--cmd-text)]"
             >
               {labels[id] ?? id.slice(0, 8)}
               <button
                 type="button"
-                className="font-medium text-zinc-600 hover:text-zinc-900"
+                className="text-[var(--cmd-text-muted)] hover:text-[var(--cmd-text)]"
                 onClick={() => removeChip(id)}
                 aria-label="Quitar"
               >
-                ×
+                <X className="h-3 w-3" />
               </button>
             </span>
           ))}

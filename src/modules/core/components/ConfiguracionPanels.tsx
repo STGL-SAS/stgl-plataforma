@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import { DeleteIconButton, SaveIconButton } from '@/components/ui/IconAction'
 import {
   deleteParticipacion,
   saveUsuarioRol,
@@ -180,9 +181,8 @@ export function ConfigParticipacion({
                   </td>
                   <td className="px-4 py-2 text-right">
                     {canEdit && (
-                      <button
-                        type="button"
-                        className="text-xs text-red-600"
+                      <DeleteIconButton
+                        label="Quitar participación"
                         disabled={busy}
                         onClick={async () => {
                           setBusy(true)
@@ -201,9 +201,7 @@ export function ConfigParticipacion({
                             setBusy(false)
                           }
                         }}
-                      >
-                        Quitar
-                      </button>
+                      />
                     )}
                   </td>
                 </tr>
@@ -380,14 +378,11 @@ export function ConfigUsuariosRoles({
                 </td>
                 <td className="px-4 py-2 text-right">
                   {canEdit && (
-                    <button
-                      type="button"
+                    <SaveIconButton
+                      label="Guardar rol"
                       disabled={busyId === r.user_id}
-                      className="rounded-md bg-zinc-900 px-3 py-1 text-xs text-white disabled:opacity-50"
                       onClick={() => void save(r)}
-                    >
-                      {busyId === r.user_id ? '…' : 'Guardar'}
-                    </button>
+                    />
                   )}
                 </td>
               </tr>

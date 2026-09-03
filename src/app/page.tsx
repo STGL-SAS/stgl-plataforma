@@ -1,5 +1,4 @@
-import { PlatformShell } from '@/modules/core/components/PlatformShell'
-import { DashboardHome } from '@/modules/core/components/DashboardHome'
+import { CommandDashboard } from '@/modules/core/components/CommandDashboard'
 import { getDashboardData } from '@/modules/core/lib/dashboard'
 
 export const dynamic = 'force-dynamic'
@@ -17,23 +16,17 @@ export default async function HomePage() {
         : 'No se pudo cargar el dashboard. ¿Aplicaste las migraciones de Fase 8?'
   }
 
-  return (
-    <PlatformShell
-      title="Inicio"
-      subtitle="Dashboard general · HYDREX · HARDTECH · HANGARC · VirtualWaiter"
-    >
-      {error && (
-        <div className="space-y-3">
-          <p className="rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-900">{error}</p>
-          <p className="text-sm text-zinc-600">
-            Mientras tanto puedes entrar a los módulos desde la barra superior. Tras{' '}
-            <code className="text-xs">supabase db push</code> de las migraciones{' '}
-            <code className="text-xs">20260902160000</code> y{' '}
-            <code className="text-xs">20260902170000</code>, este panel mostrará datos reales.
-          </p>
-        </div>
-      )}
-      {data && <DashboardHome data={data} />}
-    </PlatformShell>
-  )
+  if (error) {
+    return (
+      <div className="mx-auto max-w-2xl px-5 py-10">
+        <p className="cmd-panel rounded-xl px-4 py-3 text-sm text-[var(--cmd-decline)]">{error}</p>
+        <p className="mt-3 text-sm text-[var(--cmd-text-muted)]">
+          Tras <code className="text-xs">supabase db push</code> de las migraciones de dashboard, este
+          panel mostrará datos reales.
+        </p>
+      </div>
+    )
+  }
+
+  return data ? <CommandDashboard data={data} /> : null
 }

@@ -3,7 +3,7 @@ import {
   ConfigParticipacion,
   ConfigUsuariosRoles,
 } from '@/modules/core/components/ConfiguracionPanels'
-import { PlatformShell } from '@/modules/core/components/PlatformShell'
+import { ConfiguracionShell } from '@/modules/core/components/ConfiguracionShell'
 import {
   getParticipaciones,
   getSociosYNegocios,
@@ -37,13 +37,10 @@ export default async function ConfiguracionPage() {
   }
 
   return (
-    <PlatformShell
-      title="Configuración"
-      subtitle="Parámetros, participación societaria y roles"
-    >
+    <ConfiguracionShell>
       <div className="space-y-10">
         {error && (
-          <p className="rounded-md bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>
+          <p className="cmd-panel rounded-xl px-4 py-3 text-sm text-[var(--cmd-decline)]">{error}</p>
         )}
         <ConfigHydrexLinks />
         <ConfigParticipacion
@@ -58,6 +55,6 @@ export default async function ConfiguracionPage() {
           canEdit={auth.isSuperadmin}
         />
       </div>
-    </PlatformShell>
+    </ConfiguracionShell>
   )
 }

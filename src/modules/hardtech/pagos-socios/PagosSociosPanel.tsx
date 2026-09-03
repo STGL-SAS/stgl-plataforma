@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { crearPagoSocioHardtech, deletePagoSocioHardtech } from '../actions/mutations'
+import { DeleteIconButton } from '@/components/ui/IconAction'
 import { calcularSaldoSocios, formatCOP } from '../motor-calculo'
 import type { HardtechPagoSocio, HardtechPagoSocioTipo } from '../lib/tipos'
 import { TIPOS_PAGO_SOCIO } from '../lib/tipos'
@@ -99,7 +100,12 @@ export function PagosSociosPanel({ pagos, socios }: Props) {
                 <td className="px-4 py-3">{TIPOS_PAGO_SOCIO.find((t) => t.value === p.tipo)?.label}</td>
                 <td className="px-4 py-3 text-right">{formatCOP(p.monto)}</td>
                 <td className="px-4 py-3">
-                  <button type="button" className="text-xs text-red-600" onClick={async () => { await deletePagoSocioHardtech(p.id); router.refresh() }}>Eliminar</button>
+                  <DeleteIconButton
+                    onClick={async () => {
+                      await deletePagoSocioHardtech(p.id)
+                      router.refresh()
+                    }}
+                  />
                 </td>
               </tr>
             ))}

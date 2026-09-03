@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import { DeleteIconButton } from '@/components/ui/IconAction'
 import { deleteTarea, updateTareaCampos } from '../lib/actions'
 import { useTareaHistorial } from '../hooks/useTareaHistorial'
 import type { NegocioOption, SocioOption, TareaEstado, TareaRow, TareaTipo } from '../types'
@@ -74,23 +75,20 @@ export function TareaDetail({ initial, negocios, socios }: Props) {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <Link href="/tareas" className="text-sm text-zinc-600 hover:underline">
+        <Link href="/tareas" className="text-sm text-[var(--cmd-text-muted)] hover:underline">
           ← Volver al tablero
         </Link>
-        <button
-          type="button"
-          onClick={() => void remove()}
-          className="text-sm text-red-600 hover:underline"
-          disabled={busy}
-        >
-          Eliminar
-        </button>
+        <DeleteIconButton onClick={() => void remove()} disabled={busy} />
       </div>
 
-      {error && <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+      {error && (
+        <p className="rounded-md border border-[var(--cmd-decline)]/30 bg-[var(--cmd-decline)]/10 px-3 py-2 text-sm text-[var(--cmd-decline)]">
+          {error}
+        </p>
+      )}
 
-      <section className="space-y-3 rounded-lg border border-zinc-200 bg-white p-5 text-sm">
-        <h2 className="text-base font-semibold">Datos de la tarea</h2>
+      <section className="cmd-panel space-y-3 p-5 text-sm">
+        <h2 className="text-base font-semibold text-[var(--cmd-text)]">Datos de la tarea</h2>
         <label className="flex flex-col gap-1">
           <span className="font-medium">Título</span>
           <input
@@ -180,30 +178,30 @@ export function TareaDetail({ initial, negocios, socios }: Props) {
           type="button"
           onClick={() => void save()}
           disabled={busy}
-          className="rounded-md bg-zinc-900 px-4 py-2 text-white disabled:opacity-50"
+          className="rounded-md bg-[var(--cmd-panel-hover)] px-4 py-2 text-[var(--cmd-text)] disabled:opacity-50"
         >
           {busy ? 'Guardando…' : 'Guardar cambios'}
         </button>
-        <p className="text-xs text-zinc-500">
+        <p className="text-xs text-[var(--cmd-text-dim)]">
           Los cambios de estado y responsable quedan en el historial automáticamente.
         </p>
       </section>
 
       <section className="grid gap-6 lg:grid-cols-2">
-        <div className="space-y-4 rounded-lg border border-zinc-200 bg-white p-5">
+        <div className="cmd-panel space-y-4 p-5">
           <div className="flex items-center justify-between">
-            <h2 className="text-base font-semibold">Historial</h2>
+            <h2 className="text-base font-semibold text-[var(--cmd-text)]">Historial</h2>
             <button
               type="button"
               onClick={() => setShowAdjunto(true)}
-              className="rounded-md border border-zinc-300 px-3 py-1.5 text-sm"
+              className="rounded-md border border-[var(--cmd-border)] bg-[var(--cmd-bg)] px-3 py-1.5 text-sm text-[var(--cmd-text-muted)] hover:text-[var(--cmd-text)]"
             >
               Adjuntar documentos
             </button>
           </div>
           <TareaHistorialTimeline historial={historial} socios={socios} loading={histLoading} />
         </div>
-        <div className="rounded-lg border border-zinc-200 bg-white p-5">
+        <div className="cmd-panel p-5">
           <ComentarioForm
             tareaId={tarea.id}
             onAdded={() => {

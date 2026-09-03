@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { SimpleModal } from '@/components/ui/SimpleModal'
 import { adjuntarDocumentosTarea, upsertTarea } from '../lib/actions'
 import type { NegocioOption, SocioOption, TareaRow, TareaTipo } from '../types'
 import { TAREA_ESTADOS, TAREA_TIPOS, TIPO_LABEL, ESTADO_LABEL } from '../types'
@@ -15,6 +16,9 @@ interface Props {
   defaultNegocioId?: string
   initial?: TareaRow | null
 }
+
+const fieldClass =
+  'rounded-md border border-[var(--cmd-border)] bg-[var(--cmd-bg)] px-3 py-2 text-[var(--cmd-text)]'
 
 export function TareaFormModal({
   open,
@@ -48,8 +52,6 @@ export function TareaFormModal({
     setDocumentoIds([])
     setError(null)
   }, [open, initial, defaultNegocioId, negocios])
-
-  if (!open) return null
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
@@ -85,41 +87,35 @@ export function TareaFormModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <form
-        onSubmit={submit}
-        className="max-h-[90vh] w-full max-w-lg space-y-3 overflow-y-auto rounded-lg bg-white p-6 text-sm shadow-lg"
-      >
-        <h2 className="text-base font-semibold">
-          {initial ? 'Editar tarea' : 'Nueva tarea o caso'}
-        </h2>
-        {error && <p className="rounded-md bg-red-50 px-3 py-2 text-red-700">{error}</p>}
+    <SimpleModal
+      open={open}
+      onClose={onClose}
+      title={initial ? 'Editar tarea' : 'Nueva tarea o caso'}
+      className="max-w-lg"
+    >
+      <form onSubmit={submit} className="space-y-3 text-sm">
+        {error && (
+          <p className="rounded-md border border-[var(--cmd-decline)]/30 bg-[var(--cmd-decline)]/10 px-3 py-2 text-[var(--cmd-decline)]">
+            {error}
+          </p>
+        )}
         <label className="flex flex-col gap-1">
-          <span className="font-medium">Título</span>
-          <input
-            required
-            className="rounded-md border px-3 py-2"
-            value={titulo}
-            onChange={(e) => setTitulo(e.target.value)}
-          />
+          <span className="font-medium text-[var(--cmd-text)]">Título</span>
+          <input required className={fieldClass} value={titulo} onChange={(e) => setTitulo(e.target.value)} />
         </label>
         <label className="flex flex-col gap-1">
-          <span className="font-medium">Descripción</span>
+          <span className="font-medium text-[var(--cmd-text)]">Descripción</span>
           <textarea
             rows={3}
-            className="rounded-md border px-3 py-2"
+            className={fieldClass}
             value={descripcion}
             onChange={(e) => setDescripcion(e.target.value)}
           />
         </label>
         <div className="grid grid-cols-2 gap-3">
           <label className="flex flex-col gap-1">
-            <span className="font-medium">Tipo</span>
-            <select
-              className="rounded-md border px-3 py-2"
-              value={tipo}
-              onChange={(e) => setTipo(e.target.value as TareaTipo)}
-            >
+            <span className="font-medium text-[var(--cmd-text)]">Tipo</span>
+            <select className={fieldClass} value={tipo} onChange={(e) => setTipo(e.target.value as TareaTipo)}>
               {TAREA_TIPOS.map((t) => (
                 <option key={t} value={t}>
                   {TIPO_LABEL[t]}
@@ -128,9 +124,9 @@ export function TareaFormModal({
             </select>
           </label>
           <label className="flex flex-col gap-1">
-            <span className="font-medium">Estado</span>
+            <span className="font-medium text-[var(--cmd-text)]">Estado</span>
             <select
-              className="rounded-md border px-3 py-2"
+              className={fieldClass}
               value={estado}
               onChange={(e) => setEstado(e.target.value as typeof estado)}
             >
@@ -143,10 +139,10 @@ export function TareaFormModal({
           </label>
         </div>
         <label className="flex flex-col gap-1">
-          <span className="font-medium">Negocio</span>
+          <span className="font-medium text-[var(--cmd-text)]">Negocio</span>
           <select
             required
-            className="rounded-md border px-3 py-2"
+            className={fieldClass}
             value={negocioId}
             onChange={(e) => setNegocioId(e.target.value)}
           >
@@ -158,9 +154,9 @@ export function TareaFormModal({
           </select>
         </label>
         <label className="flex flex-col gap-1">
-          <span className="font-medium">Responsable</span>
+          <span className="font-medium text-[var(--cmd-text)]">Responsable</span>
           <select
-            className="rounded-md border px-3 py-2"
+            className={fieldClass}
             value={responsableId}
             onChange={(e) => setResponsableId(e.target.value)}
           >
@@ -173,32 +169,34 @@ export function TareaFormModal({
           </select>
         </label>
         <label className="flex flex-col gap-1">
-          <span className="font-medium">Fecha límite</span>
+          <span className="font-medium text-[var(--cmd-text)]">Fecha límite</span>
           <input
             type="date"
-            className="rounded-md border px-3 py-2"
+            className={fieldClass}
             value={fechaLimite}
             onChange={(e) => setFechaLimite(e.target.value)}
           />
         </label>
 
-        {!initial && (
-          <DocumentoPicker negocioId={negocioId} onChange={setDocumentoIds} />
-        )}
+        {!initial && <DocumentoPicker negocioId={negocioId} onChange={setDocumentoIds} />}
 
-        <div className="flex gap-2 pt-2">
+        <div className="flex gap-2 border-t border-[var(--cmd-border)] pt-3">
           <button
             type="submit"
             disabled={busy}
-            className="rounded-md bg-zinc-900 px-4 py-2 text-white disabled:opacity-50"
+            className="rounded-md bg-[var(--cmd-panel-hover)] px-4 py-2 font-medium text-[var(--cmd-text)] disabled:opacity-50"
           >
             {busy ? 'Guardando…' : 'Guardar'}
           </button>
-          <button type="button" onClick={onClose}>
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 text-[var(--cmd-text-muted)] hover:text-[var(--cmd-text)]"
+          >
             Cancelar
           </button>
         </div>
       </form>
-    </div>
+    </SimpleModal>
   )
 }

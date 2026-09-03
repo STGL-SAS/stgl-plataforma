@@ -30,6 +30,16 @@ export interface BalanceConsolidado {
   utilidad_por_socio: UtilidadSocio[]
 }
 
+export type BalanceNegocioDetalle = {
+  negocio_id: string
+  ingresos_acumulado: number
+  egresos_acumulado: number
+  saldo_acumulado: number
+  ingresos_mes: number
+  egresos_mes: number
+  saldo_mes: number
+}
+
 async function utilidadDesdeTransacciones(negocioId: string): Promise<{
   ingresos: number
   egresos: number
@@ -53,6 +63,54 @@ async function utilidadDesdeTransacciones(negocioId: string): Promise<{
     else if (t.tipo === 'egreso') egresos += m
   }
   return { ingresos, egresos, utilidad: ingresos - egresos }
+}
+
+async function utilidadMesDesdeTransacciones(negocioId: string, now = new Date()): Promise<{
+  ingresos: number
+  egresos: number
+  utilidad: number
+}> {
+  const supabase = createAdminClient()
+  const mesInicio = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
+  const mesFin = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+  const mesFinStr = `${mesFin.getFullYear()}-${String(mesFin.getMonth() + 1).padStart(2, '0')}-${String(mesFin.getDate()).padStart(2, '0')}`
+
+  const { data, error } = await supabase
+    .from('transacciones')
+    .select('tipo, monto')
+    .eq('negocio_id', negocioId)
+    .eq('estado', 'clasificada')
+    .in('tipo', ['ingreso', 'egreso'])
+    .gte('fecha', mesInicio)
+    .lte('fecha', mesFinStr)
+
+  if (error) throw new Error(error.message)
+
+  let ingresos = 0
+  let egresos = 0
+  for (const t of data ?? []) {
+    const m = Number(t.monto)
+    if (t.tipo === 'ingreso') ingresos += m
+    else if (t.tipo === 'egreso') egresos += m
+  }
+  return { ingresos, egresos, utilidad: ingresos - egresos }
+}
+
+/** Balance por negocio desde transacciones clasificadas (sin lógica especial HARDTECH). */
+export async function getBalancePorNegocio(negocioId: string): Promise<BalanceNegocioDetalle> {
+  const [acum, mes] = await Promise.all([
+    utilidadDesdeTransacciones(negocioId),
+    utilidadMesDesdeTransacciones(negocioId),
+  ])
+  return {
+    negocio_id: negocioId,
+    ingresos_acumulado: acum.ingresos,
+    egresos_acumulado: acum.egresos,
+    saldo_acumulado: acum.utilidad,
+    ingresos_mes: mes.ingresos,
+    egresos_mes: mes.egresos,
+    saldo_mes: mes.utilidad,
+  }
 }
 
 export async function getBalanceConsolidado(): Promise<BalanceConsolidado> {

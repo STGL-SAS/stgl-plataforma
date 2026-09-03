@@ -10,9 +10,9 @@ interface Props {
 
 export function TareasList({ tareas }: Props) {
   return (
-    <div className="overflow-x-auto rounded-lg border border-zinc-200 bg-white">
-      <table className="min-w-full text-sm">
-        <thead className="border-b bg-zinc-50 text-left text-zinc-600">
+    <div className="cmd-panel overflow-x-auto">
+      <table className="cmd-table min-w-full text-sm">
+        <thead className="text-left">
           <tr>
             <th className="px-4 py-3">Título</th>
             <th className="px-4 py-3">Tipo</th>
@@ -25,23 +25,26 @@ export function TareasList({ tareas }: Props) {
         <tbody>
           {tareas.length === 0 && (
             <tr>
-              <td colSpan={6} className="px-4 py-8 text-center text-zinc-500">
+              <td colSpan={6} className="px-4 py-8 text-center text-[var(--cmd-text-dim)]">
                 No hay tareas para este filtro.
               </td>
             </tr>
           )}
           {tareas.map((t) => (
-            <tr key={t.id} className="border-b border-zinc-100 hover:bg-zinc-50">
+            <tr key={t.id} className="hover:bg-[var(--cmd-panel-hover)]">
               <td className="px-4 py-3">
-                <Link href={`/tareas/${t.id}`} className="font-medium hover:underline">
+                <Link
+                  href={`/tareas/${t.id}`}
+                  className="font-medium text-[var(--cmd-text)] hover:underline"
+                >
                   {t.titulo}
                 </Link>
               </td>
-              <td className="px-4 py-3">{TIPO_LABEL[t.tipo]}</td>
-              <td className="px-4 py-3">{ESTADO_LABEL[t.estado]}</td>
-              <td className="px-4 py-3">{t.socios?.nombre ?? '—'}</td>
-              <td className="px-4 py-3">{t.fecha_limite ?? '—'}</td>
-              <td className="px-4 py-3">{t.negocios?.nombre ?? '—'}</td>
+              <td className="px-4 py-3 text-[var(--cmd-text-muted)]">{TIPO_LABEL[t.tipo]}</td>
+              <td className="px-4 py-3 text-[var(--cmd-text-muted)]">{ESTADO_LABEL[t.estado]}</td>
+              <td className="px-4 py-3 text-[var(--cmd-text-muted)]">{t.socios?.nombre ?? '—'}</td>
+              <td className="px-4 py-3 text-[var(--cmd-text-muted)]">{t.fecha_limite ?? '—'}</td>
+              <td className="px-4 py-3 text-[var(--cmd-text-muted)]">{t.negocios?.nombre ?? '—'}</td>
             </tr>
           ))}
         </tbody>

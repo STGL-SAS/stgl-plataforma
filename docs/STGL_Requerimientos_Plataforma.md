@@ -384,6 +384,8 @@ Para ejecutar el desarrollo sin perder el control del avance general, se trabaja
 
 ## 17. Fases de desarrollo técnico
 
+> ⚠️ **Riesgo conocido y aceptado temporalmente**: desde el final de la Fase 8, la plataforma está en producción (`stgl.tomasgarces.com`) **sin ningún login real** — cualquiera con la URL puede entrar y ver datos financieros, de clientes y documentos de los 4 negocios, sin autenticarse. Se evaluó poner un parche rápido antes de seguir, pero se decidió esperar a la Fase 10 (control de acceso, camino robusto). Mientras tanto, evitar compartir la URL públicamente.
+
 | Fase | Contenido | Módulos del documento |
 |---|---|---|
 | **1** | Configuración de infraestructura: cuentas y proyectos en Supabase, GitHub y Vercel | Sección 10, 12 |
@@ -394,6 +396,7 @@ Para ejecutar el desarrollo sin perder el control del avance general, se trabaja
 | **6** | Documentos (conexión OneDrive vía Microsoft Graph) | Sección 6, 15.5 |
 | **7** | Tareas y clientes (HANGARC, VirtualWaiter, HARDTECH) | Secciones 4A, 5, 15.6 |
 | **8** | Dashboard general y roles/configuración | Secciones 7, 13, 15.1, 15.7 |
+| **8B** | Vista por negocio (HANGARC, VirtualWaiter, STGL general) — sección propia con gastos fijos, balance, tareas y documentos filtrados, igual que ya existe para HYDREX y HARDTECH | Sección 15.2, 4B |
 | **9** | Diseño y experiencia visual — pulir la apariencia de toda la plataforma ya construida, y revisión de rendimiento (cold starts, consultas sin optimizar, índices, caché en el cliente) | Todas |
 | **10** | Control de acceso — camino robusto: tabla `correos_autorizados` integrada con el sistema de roles de la Fase 8, en vez de invitar manualmente desde el panel de Supabase | Sección 13 |
 | **11** (futuro) | Integraciones avanzadas: Shopify, Mercado Libre, Meta Ads | Sección 8 (fases 2 y 3) |

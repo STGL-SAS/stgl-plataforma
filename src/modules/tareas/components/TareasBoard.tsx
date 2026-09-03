@@ -8,15 +8,15 @@ function Card({ tarea }: { tarea: TareaRow }) {
   return (
     <Link
       href={`/tareas/${tarea.id}`}
-      className="block rounded-md border border-zinc-200 bg-white p-3 shadow-sm hover:border-zinc-400"
+      className="block rounded-md border border-[var(--cmd-border)] bg-[var(--cmd-bg)] p-3 transition-colors hover:border-[var(--cmd-text-dim)]"
     >
-      <p className="font-medium text-zinc-900">{tarea.titulo}</p>
-      <p className="mt-1 text-xs text-zinc-500">
+      <p className="font-medium text-[var(--cmd-text)]">{tarea.titulo}</p>
+      <p className="mt-1 text-xs text-[var(--cmd-text-muted)]">
         {TIPO_LABEL[tarea.tipo]}
         {tarea.socios?.nombre ? ` · ${tarea.socios.nombre}` : ' · Sin responsable'}
       </p>
       {tarea.fecha_limite && (
-        <p className="mt-1 text-xs text-zinc-600">Límite: {tarea.fecha_limite}</p>
+        <p className="mt-1 text-xs text-[var(--cmd-text-dim)]">Límite: {tarea.fecha_limite}</p>
       )}
     </Link>
   )
@@ -38,14 +38,19 @@ export function TareasBoard({ tareas }: Props) {
   return (
     <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
       {TAREA_ESTADOS.map((estado) => (
-        <section key={estado} className="rounded-lg border border-zinc-200 bg-zinc-100/60 p-3">
-          <h3 className="mb-3 text-sm font-semibold text-zinc-800">
+        <section
+          key={estado}
+          className="rounded-lg border border-[var(--cmd-border)] bg-[var(--cmd-panel)] p-3"
+        >
+          <h3 className="mb-3 text-sm font-semibold text-[var(--cmd-text)]">
             {ESTADO_LABEL[estado]}
-            <span className="ml-2 font-normal text-zinc-500">({byEstado[estado].length})</span>
+            <span className="ml-2 font-normal text-[var(--cmd-text-muted)]">
+              ({byEstado[estado].length})
+            </span>
           </h3>
           <div className="space-y-2">
             {byEstado[estado].length === 0 && (
-              <p className="text-xs text-zinc-500">Sin ítems</p>
+              <p className="text-xs text-[var(--cmd-text-dim)]">Sin ítems</p>
             )}
             {byEstado[estado].map((t) => (
               <Card key={t.id} tarea={t} />

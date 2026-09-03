@@ -32,15 +32,15 @@ interface Props {
 
 export function TareaHistorialTimeline({ historial, socios, loading }: Props) {
   if (loading) {
-    return <p className="text-sm text-zinc-500">Cargando historial…</p>
+    return <p className="text-sm text-[var(--cmd-text-muted)]">Cargando historial…</p>
   }
 
   if (historial.length === 0) {
-    return <p className="text-sm text-zinc-500">Aún no hay eventos en el historial.</p>
+    return <p className="text-sm text-[var(--cmd-text-muted)]">Aún no hay eventos en el historial.</p>
   }
 
   return (
-    <ol className="space-y-3 border-l border-zinc-200 pl-4">
+    <ol className="space-y-3 border-l border-[var(--cmd-border)] pl-4">
       {historial.map((ev) => {
         let detalle = ''
         if (ev.tipo_evento === 'creacion') {
@@ -57,20 +57,20 @@ export function TareaHistorialTimeline({ historial, socios, loading }: Props) {
 
         return (
           <li key={ev.id} className="relative">
-            <span className="absolute -left-[1.35rem] top-1.5 h-2.5 w-2.5 rounded-full bg-zinc-400" />
-            <p className="text-sm font-medium text-zinc-900">{EVENTO_LABEL[ev.tipo_evento]}</p>
-            <p className="text-sm text-zinc-700 whitespace-pre-wrap">{detalle}</p>
+            <span className="absolute -left-[1.35rem] top-1.5 h-2.5 w-2.5 rounded-full bg-[var(--cmd-text-dim)]" />
+            <p className="text-sm font-medium text-[var(--cmd-text)]">{EVENTO_LABEL[ev.tipo_evento]}</p>
+            <p className="whitespace-pre-wrap text-sm text-[var(--cmd-text-muted)]">{detalle}</p>
             {ev.tipo_evento === 'documento_adjunto' && ev.documentos?.onedrive_web_url && (
               <a
                 href={ev.documentos.onedrive_web_url}
                 target="_blank"
                 rel="noreferrer"
-                className="text-xs text-blue-700 hover:underline"
+                className="text-xs text-[var(--cmd-hydrex)] hover:underline"
               >
                 Abrir en OneDrive
               </a>
             )}
-            <p className="mt-0.5 text-xs text-zinc-500">{formatWhen(ev.created_at)}</p>
+            <p className="mt-0.5 text-xs text-[var(--cmd-text-dim)]">{formatWhen(ev.created_at)}</p>
           </li>
         )
       })}

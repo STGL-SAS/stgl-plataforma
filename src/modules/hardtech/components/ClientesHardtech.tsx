@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { deleteClienteHardtech, upsertClienteHardtech } from '../actions/mutations'
+import { RowActions } from '@/components/ui/RowActions'
 import {
   buildClienteContacto,
   contactoFromRecord,
@@ -77,17 +78,22 @@ export function ClientesHardtech({ clientes }: Props) {
                 <p className="font-medium">{c.nombre}</p>
                 <p className="text-sm text-zinc-500">{resumenContactoCliente(contacto)}</p>
               </div>
-              <div className="flex gap-2 text-xs">
-                <button type="button" onClick={() => setEdit({
-                  id: c.id,
-                  nombre: c.nombre,
-                  telefono: contacto.telefono,
-                  email: contacto.email,
-                  direccion: contacto.direccion,
-                  notas: c.notas ?? '',
-                })}>Editar</button>
-                <button type="button" className="text-red-600" onClick={async () => { await deleteClienteHardtech(c.id); router.refresh() }}>Eliminar</button>
-              </div>
+              <RowActions
+                onEdit={() =>
+                  setEdit({
+                    id: c.id,
+                    nombre: c.nombre,
+                    telefono: contacto.telefono,
+                    email: contacto.email,
+                    direccion: contacto.direccion,
+                    notas: c.notas ?? '',
+                  })
+                }
+                onDelete={async () => {
+                  await deleteClienteHardtech(c.id)
+                  router.refresh()
+                }}
+              />
             </li>
           )
         })}

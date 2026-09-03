@@ -1,26 +1,330 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --cmd-bg: #181b23;
+  --cmd-bg-deep: #151820;
+  --cmd-panel: #1f232d;
+  --cmd-panel-hover: #282c38;
+  --cmd-border: #333845;
+  --cmd-text: #f3f4f6;
+  --cmd-text-muted: #a8b0bd;
+  --cmd-text-dim: #7b8494;
+  --cmd-growth: #34d399;
+  --cmd-decline: #f87171;
+  --cmd-alert: #ff3b30;
+  --cmd-hydrex: #22d3ee;
+  --cmd-hangarc: #f59e0b;
+  --cmd-vw: #a3e635;
+  --cmd-hardtech: #c084fc;
+  --cmd-stgl: #8a8578;
+  --cmd-focus: #22d3ee;
+  --cmd-grid: rgba(255, 255, 255, 0.05);
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-jetbrains);
+  --font-display: var(--font-fraunces);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-background: var(--cmd-bg);
+  --color-foreground: var(--cmd-text);
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-jetbrains);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  color-scheme: dark;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--cmd-bg-deep);
+  color: var(--cmd-text);
+  font-family: var(--font-inter), system-ui, sans-serif;
+}
+
+/* Dot grid background */
+.command-app {
+  background-color: var(--cmd-bg-deep);
+  background-image: radial-gradient(circle at 1px 1px, var(--cmd-grid) 1px, transparent 0);
+  background-size: 24px 24px;
+  min-height: 100%;
+}
+
+.font-display {
+  font-family: var(--font-fraunces), Georgia, serif;
+}
+
+.font-label-mono {
+  font-family: var(--font-jetbrains), ui-monospace, monospace;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+/* Panels */
+.cmd-panel {
+  background: var(--cmd-panel);
+  border: 1px solid var(--cmd-border);
+  border-radius: 0.75rem;
+}
+
+.cmd-panel-glow {
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.cmd-panel-glow:hover {
+  border-color: color-mix(in srgb, var(--glow-color, var(--cmd-border)) 40%, var(--cmd-border));
+  box-shadow: 0 0 24px color-mix(in srgb, var(--glow-color, transparent) 15%, transparent);
+}
+
+/* Status badge */
+.cmd-badge {
+  font-family: var(--font-jetbrains), ui-monospace, monospace;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+/* Pulse — respects reduced motion */
+@keyframes cmd-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.15);
+  }
+}
+
+.cmd-pulse {
+  animation: cmd-pulse 2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cmd-pulse {
+    animation: none;
+  }
+
+  .cmd-panel-glow,
+  .cmd-panel-glow:hover {
+    transition: none;
+  }
+}
+
+/* Focus ring */
+.command-app :where(a, button, input, select, textarea, [tabindex]:not([tabindex='-1'])):focus-visible {
+  outline: 2px solid var(--cmd-focus);
+  outline-offset: 2px;
+}
+
+/* Legacy light Tailwind classes → dark command theme inside app shell */
+.command-main :where(.bg-zinc-50, .bg-zinc-100) {
+  background-color: var(--cmd-panel) !important;
+}
+
+.command-main :where(.bg-white) {
+  background-color: rgba(19, 21, 28, 0.9) !important;
+}
+
+.command-main :where(.border-zinc-100, .border-zinc-200, .border-zinc-300) {
+  border-color: var(--cmd-border) !important;
+}
+
+.command-main :where(.text-zinc-900, .text-zinc-800, .text-zinc-700) {
+  color: var(--cmd-text) !important;
+}
+
+.command-main :where(.text-zinc-600, .text-zinc-500) {
+  color: var(--cmd-text-muted) !important;
+}
+
+.command-main :where(.text-zinc-400) {
+  color: var(--cmd-text-dim) !important;
+}
+
+.command-main :where(.hover\:bg-zinc-100:hover, .hover\:bg-zinc-50:hover) {
+  background-color: var(--cmd-panel-hover) !important;
+}
+
+.command-main :where(.bg-zinc-900) {
+  background-color: color-mix(in srgb, var(--module-accent, #22d3ee) 25%, #1a1d26) !important;
+  color: var(--cmd-text) !important;
+}
+
+.command-main :where(.bg-amber-50) {
+  background-color: rgba(255, 59, 48, 0.08) !important;
+  border-color: rgba(255, 59, 48, 0.25) !important;
+}
+
+.command-main :where(.text-amber-950, .text-amber-900, .text-amber-800) {
+  color: #fecaca !important;
+}
+
+.command-main :where(.border-amber-200, .border-amber-400) {
+  border-color: rgba(245, 158, 11, 0.35) !important;
+}
+
+.command-main :where(.bg-emerald-600\/80) {
+  background-color: rgba(52, 211, 153, 0.7) !important;
+}
+
+.command-main :where(.bg-rose-500\/70) {
+  background-color: rgba(248, 113, 113, 0.65) !important;
+}
+
+.command-main :where(input, select, textarea) {
+  background-color: var(--cmd-panel) !important;
+  border-color: var(--cmd-border) !important;
+  color: var(--cmd-text) !important;
+}
+
+.command-main :where(input::placeholder, textarea::placeholder) {
+  color: var(--cmd-text-dim) !important;
+}
+
+.command-main :where(thead) {
+  background-color: rgba(255, 255, 255, 0.03) !important;
+}
+
+.command-main :where(tbody tr:hover) {
+  background-color: rgba(255, 255, 255, 0.02) !important;
+}
+
+.command-main :where(.hydrex-root) {
+  color: var(--cmd-text);
+  color-scheme: dark;
+}
+
+.command-main :where(.hydrex-root h1, .hydrex-root h2, .hydrex-root h3, .hydrex-root p, .hydrex-root li, .hydrex-root td, .hydrex-root th, .hydrex-root label) {
+  color: inherit;
+}
+
+/* Module nav underline tabs */
+.cmd-module-nav a {
+  position: relative;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--cmd-text-muted);
+  border-radius: 0.25rem;
+  transition: color 0.15s ease;
+}
+
+.cmd-module-nav a:hover {
+  color: var(--cmd-text);
+}
+
+.cmd-module-nav a[data-active='true'] {
+  color: var(--module-accent, var(--cmd-text));
+}
+
+.cmd-module-nav a[data-active='true']::after {
+  content: '';
+  position: absolute;
+  left: 0.75rem;
+  right: 0.75rem;
+  bottom: -1px;
+  height: 2px;
+  background: var(--module-accent, var(--cmd-hydrex));
+  border-radius: 1px;
+  box-shadow: 0 0 8px color-mix(in srgb, var(--module-accent, var(--cmd-hydrex)) 50%, transparent);
+}
+
+/* Data table zebra */
+.cmd-table tbody tr:nth-child(3n) {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.cmd-table th {
+  font-family: var(--font-jetbrains), ui-monospace, monospace;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cmd-text-muted);
+}
+
+.cmd-table td {
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Terminal cursor blink */
+@keyframes cmd-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+.cmd-cursor {
+  animation: cmd-blink 1s step-end infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cmd-cursor {
+    animation: none;
+    opacity: 1;
+  }
+}
+
+/* Documentos embebidos en vista por negocio (tema oscuro) */
+.documentos-explorer-dark select,
+.documentos-explorer-dark input,
+.documentos-explorer-dark button[type='button']:not([class*='bg-']) {
+  border-color: var(--cmd-border);
+  background: var(--cmd-panel);
+  color: var(--cmd-text);
+}
+
+.documentos-explorer-dark .rounded-lg.border.bg-white,
+.documentos-explorer-dark .overflow-x-auto.rounded-lg.border {
+  border-color: var(--cmd-border) !important;
+  background: transparent !important;
+}
+
+.documentos-explorer-dark table thead {
+  background: rgba(0, 0, 0, 0.2);
+  color: var(--cmd-text-muted);
+}
+
+.documentos-explorer-dark table tbody tr {
+  border-color: var(--cmd-border);
+  color: var(--cmd-text);
+}
+
+.documentos-explorer-dark table tbody tr:hover {
+  background: var(--cmd-panel-hover);
+}
+
+.documentos-explorer-dark nav.text-sm,
+.documentos-explorer-dark p.text-sm {
+  color: var(--cmd-text-muted);
+}
+
+.documentos-explorer-dark .text-zinc-600,
+.documentos-explorer-dark .text-zinc-500,
+.documentos-explorer-dark .text-zinc-900 {
+  color: var(--cmd-text-muted);
+}
+
+.documentos-explorer-dark .bg-emerald-50,
+.documentos-explorer-dark .bg-red-50 {
+  background: var(--cmd-panel);
+  color: var(--cmd-text);
+}
+
+.documentos-explorer-dark .text-emerald-800,
+.documentos-explorer-dark .text-red-700 {
+  color: var(--cmd-text);
+}
+
+.documentos-explorer-dark button.rounded-md.bg-zinc-900 {
+  background: var(--cmd-panel-hover);
+  color: var(--cmd-text);
+  border: 1px solid var(--cmd-border);
 }

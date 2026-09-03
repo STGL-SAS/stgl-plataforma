@@ -53,44 +53,106 @@ export type TareasEstadoNegocio = {
   resueltas: number
 }
 
+export type NegocioCardMetric = {
+  label: string
+  value: string
+  empty?: boolean
+  hint?: string
+}
+
+export type NegocioCardData = {
+  negocio_codigo: string
+  estado: 'ACTIVO' | 'EN DESARROLLO'
+  metric1: NegocioCardMetric
+  metric2: NegocioCardMetric
+}
+
+export type LiveFeedItem = {
+  id: string
+  at: string
+  text: string
+  tone: 'alert' | 'neutral' | 'hydrex' | 'hangarc' | 'virtualwaiter' | 'hardtech' | 'contabilidad'
+  href?: string
+}
+
+export type DashboardSummary = {
+  consolidatedNav: number
+  growthPct: number | null
+  segmentWeights: { codigo: string; weight: number }[]
+}
+
+export type HydrexVentaRow = {
+  cantidad: number
+  margen_pct: number
+  created_at: string
+}
+
+export type HardtechVentaRow = {
+  id: string
+  fecha_cotizacion: string | null
+  estado: string
+}
+
+export type DashboardData = {
+  alertas: AlertaDashboard[]
+  movimientos: MovimientoMensual[]
+  hydrexVentas: HydrexVentaRow[]
+  hydrexStockTotal: number
+  hardtechVentas: HardtechVentaRow[]
+  hardtechSaldoPendiente: number
+  aportes: AporteResumen[]
+  utilidad: UtilidadRepartible[]
+  tareas: TareasEstadoNegocio[]
+  liveFeed: LiveFeedItem[]
+  negocios: { id: string; codigo: string; nombre: string }[]
+}
+
 function num(v: unknown): number {
   return v != null && !Number.isNaN(Number(v)) ? Number(v) : 0
 }
 
-export async function getDashboardData() {
+export async function getDashboardData(): Promise<DashboardData> {
   const supabase = createAdminClient()
-  const mesActual = new Date()
-  const mesIso = `${mesActual.getFullYear()}-${String(mesActual.getMonth() + 1).padStart(2, '0')}-01`
+  const fetchFrom = monthsAgoIso(35)
 
   const [
     alertasRes,
-    balanceRes,
     movimientosRes,
     aportesRes,
     utilidadRes,
     tareasRes,
-    hardtechRes,
     negociosRes,
+    hydrexVentasRes,
+    hydrexStockRes,
+    hardtechVentasRes,
+    hardtechSaldoRes,
   ] = await Promise.all([
     supabase.from('v_alertas_dashboard').select('*'),
-    supabase.from('v_balance_por_negocio').select('*'),
-    supabase.from('v_movimientos_mensuales').select('*').gte('mes', monthsAgoIso(11)),
+    supabase.from('v_movimientos_mensuales').select('*').gte('mes', fetchFrom),
     supabase.from('v_aportes_por_socio').select('*'),
     supabase.from('v_utilidad_repartible').select('*'),
     supabase.from('v_tareas_estado_por_negocio').select('*'),
-    supabase.from('v_utilidad_hardtech').select('*').maybeSingle(),
     supabase.from('negocios').select('id, codigo, nombre').in('codigo', [...NEGOCIOS_DASHBOARD]),
+    supabase
+      .from('hydrex_ventas_detalle')
+      .select('cantidad, margen_pct, created_at')
+      .gte('created_at', `${fetchFrom}T00:00:00`),
+    supabase.from('hydrex_stock_productos').select('stock_disponible'),
+    supabase.from('hardtech_ventas').select('id, fecha_cotizacion, estado'),
+    supabase.from('hardtech_saldo_socios').select('saldo_neto'),
   ])
 
   const errors = [
     alertasRes.error,
-    balanceRes.error,
     movimientosRes.error,
     aportesRes.error,
     utilidadRes.error,
     tareasRes.error,
-    hardtechRes.error,
     negociosRes.error,
+    hydrexVentasRes.error,
+    hydrexStockRes.error,
+    hardtechVentasRes.error,
+    hardtechSaldoRes.error,
   ].filter(Boolean)
   if (errors.length) {
     throw new Error(errors[0]!.message)
@@ -102,41 +164,6 @@ export async function getDashboardData() {
       cantidad: Number(r.cantidad) || 0,
     }))
     .filter((a) => a.cantidad > 0)
-
-  const movMes = (movimientosRes.data ?? []).filter((m) => String(m.mes).startsWith(mesIso.slice(0, 7)))
-  const utilidadHt = num(hardtechRes.data?.utilidad_neta)
-
-  const byCodigo = new Map(
-    (balanceRes.data ?? []).map((b) => [String(b.negocio_codigo), b])
-  )
-
-  const balances: BalanceNegocio[] = (negociosRes.data ?? [])
-    .map((n) => {
-      const b = byCodigo.get(n.codigo as string)
-      const mes = movMes.find((m) => m.negocio_id === n.id)
-      const ingresos = num(b?.ingresos)
-      const egresos = num(b?.egresos)
-      const ingresos_mes = num(mes?.ingresos)
-      const egresos_mes = num(mes?.egresos)
-      const isHt = n.codigo === 'HARDTECH'
-      return {
-        negocio_id: n.id as string,
-        negocio_codigo: n.codigo as string,
-        negocio_nombre: n.nombre as string,
-        ingresos,
-        egresos,
-        balance: isHt ? utilidadHt : ingresos - egresos,
-        ingresos_mes,
-        egresos_mes,
-        balance_mes: ingresos_mes - egresos_mes,
-        utilidad_hardtech: isHt ? utilidadHt : undefined,
-      }
-    })
-    .sort(
-      (a, b) =>
-        NEGOCIOS_DASHBOARD.indexOf(a.negocio_codigo as (typeof NEGOCIOS_DASHBOARD)[number]) -
-        NEGOCIOS_DASHBOARD.indexOf(b.negocio_codigo as (typeof NEGOCIOS_DASHBOARD)[number])
-    )
 
   const movimientos: MovimientoMensual[] = (movimientosRes.data ?? []).map((m) => ({
     negocio_id: m.negocio_id as string,
@@ -176,14 +203,150 @@ export async function getDashboardData() {
     resueltas: Number(t.resueltas) || 0,
   }))
 
+  const negocios = (negociosRes.data ?? [])
+    .map((n) => ({
+      id: n.id as string,
+      codigo: n.codigo as string,
+      nombre: n.nombre as string,
+    }))
+    .sort(
+      (a, b) =>
+        NEGOCIOS_DASHBOARD.indexOf(a.codigo as (typeof NEGOCIOS_DASHBOARD)[number]) -
+        NEGOCIOS_DASHBOARD.indexOf(b.codigo as (typeof NEGOCIOS_DASHBOARD)[number])
+    )
+
+  const hydrexVentas: HydrexVentaRow[] = (hydrexVentasRes.data ?? []).map((v) => ({
+    cantidad: num(v.cantidad),
+    margen_pct: num(v.margen_pct),
+    created_at: String(v.created_at),
+  }))
+
+  const hydrexStockTotal = (hydrexStockRes.data ?? []).reduce(
+    (s, r) => s + num(r.stock_disponible),
+    0
+  )
+
+  const hardtechVentas: HardtechVentaRow[] = (hardtechVentasRes.data ?? []).map((v) => ({
+    id: v.id as string,
+    fecha_cotizacion: v.fecha_cotizacion ? String(v.fecha_cotizacion).slice(0, 10) : null,
+    estado: String(v.estado),
+  }))
+
+  const hardtechSaldoPendiente = (hardtechSaldoRes.data ?? []).reduce(
+    (s, r) => s + Math.abs(num(r.saldo_neto)),
+    0
+  )
+
+  const liveFeed = buildLiveFeed(alertas, aportesMap, tareas)
+
   return {
     alertas,
-    balances,
     movimientos,
+    hydrexVentas,
+    hydrexStockTotal,
+    hardtechVentas,
+    hardtechSaldoPendiente,
     aportes: [...aportesMap.values()].sort((a, b) => a.socio_nombre.localeCompare(b.socio_nombre)),
     utilidad,
     tareas,
+    liveFeed,
+    negocios,
   }
+}
+
+function formatCopPlain(n: number): string {
+  return new Intl.NumberFormat('es-CO', {
+    style: 'currency',
+    currency: 'COP',
+    maximumFractionDigits: 0,
+  }).format(n)
+}
+
+function buildLiveFeed(
+  alertas: AlertaDashboard[],
+  aportes: Map<string, AporteResumen>,
+  tareas: TareasEstadoNegocio[]
+): LiveFeedItem[] {
+  const now = new Date()
+  const ts = now.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: false })
+  const items: LiveFeedItem[] = []
+
+  for (const a of alertas) {
+    if (a.tipo === 'bold_pendiente') {
+      items.push({
+        id: `bold-${a.cantidad}`,
+        at: ts,
+        text:
+          a.cantidad === 1
+            ? '1 transacción Bold pendiente por clasificar'
+            : `${a.cantidad} transacciones Bold pendientes por clasificar`,
+        tone: 'alert',
+        href: '/contabilidad/bold-pendientes',
+      })
+    } else if (a.tipo === 'documento_sin_categorizar') {
+      items.push({
+        id: `doc-${a.cantidad}`,
+        at: ts,
+        text:
+          a.cantidad === 1
+            ? '1 documento sin categorizar'
+            : `${a.cantidad} documentos sin categorizar`,
+        tone: 'neutral',
+        href: '/documentos',
+      })
+    } else if (a.tipo === 'tarea_vencida') {
+      items.push({
+        id: `tarea-${a.cantidad}`,
+        at: ts,
+        text: a.cantidad === 1 ? '1 tarea vencida' : `${a.cantidad} tareas vencidas`,
+        tone: 'alert',
+        href: '/tareas',
+      })
+    }
+  }
+
+  for (const t of tareas.filter((x) => x.abiertas > 0)) {
+    const tone =
+      t.negocio_codigo === 'HYDREX'
+        ? 'hydrex'
+        : t.negocio_codigo === 'HARDTECH'
+          ? 'hardtech'
+          : t.negocio_codigo === 'HANGARC'
+            ? 'hangarc'
+            : t.negocio_codigo === 'VIRTUALWAITER'
+              ? 'virtualwaiter'
+              : 'neutral'
+    items.push({
+      id: `tareas-${t.negocio_id}`,
+      at: ts,
+      text: `${t.negocio_nombre}: ${t.abiertas} tarea${t.abiertas === 1 ? '' : 's'} abierta${t.abiertas === 1 ? '' : 's'}`,
+      tone,
+      href: '/tareas',
+    })
+  }
+
+  const aportesList = [...aportes.values()].filter((a) => a.total > 0)
+  if (aportesList.length > 0) {
+    const top = aportesList.sort((a, b) => b.total - a.total)[0]
+    items.push({
+      id: `aporte-${top.socio_id}`,
+      at: ts,
+      text: `Aportes registrados — ${top.socio_nombre}: ${formatCopPlain(top.total)} acumulado`,
+      tone: 'contabilidad',
+      href: '/contabilidad/socios',
+    })
+  }
+
+  if (items.length === 0) {
+    items.push({
+      id: 'idle',
+      at: ts,
+      text: 'Sin alertas activas. Plataforma al día.',
+      tone: 'neutral',
+    })
+  }
+
+  return items.slice(0, 12)
 }
 
 function monthsAgoIso(n: number): string {

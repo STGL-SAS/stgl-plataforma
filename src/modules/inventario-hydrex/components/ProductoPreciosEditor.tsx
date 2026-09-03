@@ -8,6 +8,7 @@ import {
 } from '../lib/validate-tipo-precio'
 import { CurrencyInput } from './CurrencyInput'
 import { NumberInput } from '@/components/NumberInput'
+import { DeleteIconButton } from '@/components/ui/IconAction'
 
 export type PrecioLineaDraft = {
   tipo_precio: TipoPrecio
@@ -162,14 +163,11 @@ export function ProductoPreciosEditor({ tipoProducto, lineas, onChange }: Props)
                 </label>
               )}
 
-              <button
-                type="button"
+              <DeleteIconButton
+                label="Quitar precio"
                 onClick={() => removeLinea(index)}
-                className="rounded-md border px-3 py-2 text-sm text-red-600 sm:col-start-auto"
-                title="Quitar precio"
-              >
-                Quitar
-              </button>
+                className="sm:col-start-auto"
+              />
             </li>
           ))}
         </ul>
