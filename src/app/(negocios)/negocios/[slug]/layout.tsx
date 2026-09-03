@@ -1,7 +1,10 @@
+import { Suspense } from 'react'
 import { notFound } from 'next/navigation'
 import { NegocioShell } from '@/modules/negocios/components/NegocioShell'
 import { getNegocioPageContext } from '@/modules/negocios/lib/page-data'
 import { isValidNegocioSlug } from '@/modules/negocios/lib/slugs'
+import { BusinessAlertsBell } from '@/components/ui/BusinessAlertsBell'
+import { AlertsBellSkeleton } from '@/components/ui/AlertsBellSkeleton'
 
 export const dynamic = 'force-dynamic'
 
@@ -19,7 +22,15 @@ export default async function NegocioLayout({
   if (!ctx) notFound()
 
   return (
-    <NegocioShell negocio={ctx.negocio} slug={slug}>
+    <NegocioShell
+      negocio={ctx.negocio}
+      slug={slug}
+      headerActions={
+        <Suspense fallback={<AlertsBellSkeleton />}>
+          <BusinessAlertsBell negocioCodigo={ctx.negocio.codigo} />
+        </Suspense>
+      }
+    >
       {children}
     </NegocioShell>
   )

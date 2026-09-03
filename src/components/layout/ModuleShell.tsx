@@ -13,6 +13,7 @@ export function ModuleShell({
   accent,
   businessCodigo,
   links,
+  headerActions,
   children,
 }: {
   title: string
@@ -20,6 +21,7 @@ export function ModuleShell({
   accent?: string
   businessCodigo?: string
   links?: NavLink[]
+  headerActions?: React.ReactNode
   children: React.ReactNode
 }) {
   const pathname = usePathname()
@@ -31,12 +33,17 @@ export function ModuleShell({
       style={{ '--module-accent': moduleAccent } as React.CSSProperties}
     >
       <header className="mb-6 border-b border-[var(--cmd-border)] pb-4">
-        <div className="flex items-start gap-3">
-          {businessCodigo && <BusinessLogo codigo={businessCodigo} size={40} />}
-          <div>
-            <h1 className="text-xl font-semibold tracking-tight text-[var(--cmd-text)]">{title}</h1>
-            {subtitle && <p className="mt-0.5 text-sm text-[var(--cmd-text-muted)]">{subtitle}</p>}
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex min-w-0 items-start gap-3">
+            {businessCodigo && <BusinessLogo codigo={businessCodigo} size={40} />}
+            <div className="min-w-0">
+              <h1 className="text-xl font-semibold tracking-tight text-[var(--cmd-text)]">{title}</h1>
+              {subtitle && (
+                <p className="mt-0.5 text-sm text-[var(--cmd-text-muted)]">{subtitle}</p>
+              )}
+            </div>
           </div>
+          {headerActions && <div className="shrink-0">{headerActions}</div>}
         </div>
         {links && links.length > 0 && (
           <nav className="cmd-module-nav mt-4 flex flex-wrap gap-1 border-b border-[var(--cmd-border)] pb-0">

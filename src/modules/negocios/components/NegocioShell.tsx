@@ -15,10 +15,12 @@ export function NegocioShell({
   negocio,
   slug,
   children,
+  headerActions,
 }: {
   negocio: NegocioRecord
   slug: string
   children: React.ReactNode
+  headerActions?: React.ReactNode
 }) {
   const title = negocio.codigo === 'STGL' ? 'STGL / General' : negocio.nombre
 
@@ -29,6 +31,7 @@ export function NegocioShell({
       accent={accentForNegocio(negocio.codigo)}
       businessCodigo={negocio.codigo}
       links={negocioLinks(slug)}
+      headerActions={headerActions}
     >
       {children}
     </ModuleShell>

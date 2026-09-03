@@ -2,6 +2,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
+import { buildLiveFeed } from './alerts'
 import { NEGOCIOS_DASHBOARD } from './format'
 
 export type AlertaDashboard = {
@@ -237,7 +238,7 @@ export async function getDashboardData(): Promise<DashboardData> {
     0
   )
 
-  const liveFeed = buildLiveFeed(alertas, aportesMap, tareas)
+  const liveFeed = buildLiveFeed(alertas, { tareas, aportes: aportesMap, includeAportes: true })
 
   return {
     alertas,
@@ -252,101 +253,6 @@ export async function getDashboardData(): Promise<DashboardData> {
     liveFeed,
     negocios,
   }
-}
-
-function formatCopPlain(n: number): string {
-  return new Intl.NumberFormat('es-CO', {
-    style: 'currency',
-    currency: 'COP',
-    maximumFractionDigits: 0,
-  }).format(n)
-}
-
-function buildLiveFeed(
-  alertas: AlertaDashboard[],
-  aportes: Map<string, AporteResumen>,
-  tareas: TareasEstadoNegocio[]
-): LiveFeedItem[] {
-  const now = new Date()
-  const ts = now.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: false })
-  const items: LiveFeedItem[] = []
-
-  for (const a of alertas) {
-    if (a.tipo === 'bold_pendiente') {
-      items.push({
-        id: `bold-${a.cantidad}`,
-        at: ts,
-        text:
-          a.cantidad === 1
-            ? '1 transacción Bold pendiente por clasificar'
-            : `${a.cantidad} transacciones Bold pendientes por clasificar`,
-        tone: 'alert',
-        href: '/contabilidad/bold-pendientes',
-      })
-    } else if (a.tipo === 'documento_sin_categorizar') {
-      items.push({
-        id: `doc-${a.cantidad}`,
-        at: ts,
-        text:
-          a.cantidad === 1
-            ? '1 documento sin categorizar'
-            : `${a.cantidad} documentos sin categorizar`,
-        tone: 'neutral',
-        href: '/documentos',
-      })
-    } else if (a.tipo === 'tarea_vencida') {
-      items.push({
-        id: `tarea-${a.cantidad}`,
-        at: ts,
-        text: a.cantidad === 1 ? '1 tarea vencida' : `${a.cantidad} tareas vencidas`,
-        tone: 'alert',
-        href: '/tareas',
-      })
-    }
-  }
-
-  for (const t of tareas.filter((x) => x.abiertas > 0)) {
-    const tone =
-      t.negocio_codigo === 'HYDREX'
-        ? 'hydrex'
-        : t.negocio_codigo === 'HARDTECH'
-          ? 'hardtech'
-          : t.negocio_codigo === 'HANGARC'
-            ? 'hangarc'
-            : t.negocio_codigo === 'VIRTUALWAITER'
-              ? 'virtualwaiter'
-              : 'neutral'
-    items.push({
-      id: `tareas-${t.negocio_id}`,
-      at: ts,
-      text: `${t.negocio_nombre}: ${t.abiertas} tarea${t.abiertas === 1 ? '' : 's'} abierta${t.abiertas === 1 ? '' : 's'}`,
-      tone,
-      href: '/tareas',
-    })
-  }
-
-  const aportesList = [...aportes.values()].filter((a) => a.total > 0)
-  if (aportesList.length > 0) {
-    const top = aportesList.sort((a, b) => b.total - a.total)[0]
-    items.push({
-      id: `aporte-${top.socio_id}`,
-      at: ts,
-      text: `Aportes registrados — ${top.socio_nombre}: ${formatCopPlain(top.total)} acumulado`,
-      tone: 'contabilidad',
-      href: '/contabilidad/socios',
-    })
-  }
-
-  if (items.length === 0) {
-    items.push({
-      id: 'idle',
-      at: ts,
-      text: 'Sin alertas activas. Plataforma al día.',
-      tone: 'neutral',
-    })
-  }
-
-  return items.slice(0, 12)
 }
 
 function monthsAgoIso(n: number): string {

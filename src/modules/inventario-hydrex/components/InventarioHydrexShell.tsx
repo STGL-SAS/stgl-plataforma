@@ -3,7 +3,13 @@
 import { ModuleShell } from '@/components/layout/ModuleShell'
 import { HYDREX_LINKS } from '@/lib/navigation'
 
-export function InventarioHydrexShell({ children }: { children: React.ReactNode }) {
+export function InventarioHydrexShell({
+  children,
+  headerActions,
+}: {
+  children: React.ReactNode
+  headerActions?: React.ReactNode
+}) {
   return (
     <ModuleShell
       title="HYDREX"
@@ -11,6 +17,7 @@ export function InventarioHydrexShell({ children }: { children: React.ReactNode 
       accent="var(--cmd-hydrex)"
       businessCodigo="HYDREX"
       links={HYDREX_LINKS}
+      headerActions={headerActions}
     >
       {children}
     </ModuleShell>

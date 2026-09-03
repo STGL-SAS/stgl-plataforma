@@ -21,7 +21,8 @@ const ALERTA_META: Record<
     href: '/documentos',
   },
   tarea_vencida: {
-    titulo: (n) => (n === 1 ? '1 tarea vencida' : `${n} tareas vencidas`),
+    titulo: (n) =>
+      n === 1 ? '1 tarea vencida o que vence hoy' : `${n} tareas vencidas o que vencen hoy`,
     href: '/tareas',
   },
 }
